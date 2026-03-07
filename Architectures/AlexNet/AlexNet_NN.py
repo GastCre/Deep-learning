@@ -1,17 +1,16 @@
 # %% Adding the system path to import the dataset module
-import torch
-import torchvision
-import torchvision.transforms as transforms
-import torch.nn as nn
-from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
-import numpy as np
-from data.ImageNet.dataset_ImageNet import trainloader, testloader, validationloader
 import seaborn as sns
+from data.ImageNet.dataset_ImageNet import trainloader, testloader, validationloader
+import numpy as np
+import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+import torch.nn as nn
+import torchvision.transforms as transforms
+import torchvision
+import torch
 import os
 os.chdir("/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning")
-
-
+# %% Imports
 # %%
 
 
