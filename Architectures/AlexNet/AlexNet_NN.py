@@ -1,15 +1,16 @@
 # %% Adding the system path to import the dataset module
-import seaborn as sns
-from data.ImageNet.dataset_ImageNet import trainloader, testloader, validationloader
-import numpy as np
-import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
-import torch.nn as nn
-import torchvision.transforms as transforms
-import torchvision
 import torch
+import torchvision
+import torchvision.transforms as transforms
+import torch.nn as nn
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import numpy as np
+from data.ImageNet.dataset_ImageNet import train_loader, test_loader, validation_loader
+import seaborn as sns
 import os
 os.chdir("/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning")
+
 # %% Imports
 # %%
 
@@ -79,7 +80,7 @@ losses = []
 NUM_EPOCHS = 10
 for epoch in range(NUM_EPOCHS):
     loss_epochs = []
-    for i, batch in enumerate(trainloader, 0):
+    for i, batch in enumerate(train_loader, 0):
         inputs, labels = batch['image'], batch['label']
         inputs, labels = inputs.to(device), labels.to(device)
         # zero gradients
