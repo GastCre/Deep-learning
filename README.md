@@ -1,14 +1,17 @@
 # Deep-learning
-In this repository I host PyTorch implementations of classic deep learning architectures
+This repository hold PyTorch implementations of classic deep learning architectures.
 
 ## Architectures
 
 ### AlexNet  
-[Architectures/AlexNet/AlexNet_NN.py](Architectures/AlexNet/AlexNet_NN.py)
+[AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
+[AlexNet paper](https://proceedings.neurips.cc/paper_files/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf)
 
 **Evaluation:**  
-![AlexNet Loss Curve](Architectures/AlexNet/Train_test_output_MNIST.png)
-![AlexNet Confusion Matrix](Architectures/AlexNet/Confustion_matrix_MNIST.png)
+<p align="center">
+  <img src="Architectures/AlexNet/Train_test_output_MNIST.png" alt="AlexNet Loss Curve" width="45%"/>
+  <img src="Architectures/AlexNet/Confustion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="45%"/>
+</p>
 
 *Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting.*
 
