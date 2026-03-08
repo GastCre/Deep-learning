@@ -51,15 +51,15 @@ As seen in the confusion matrix, most of the classes were correctly identified, 
 ### VGG-19  
 [Architectures/VGG-19/VGG19_NN.py](Architectures/VGG-19/VGG19_NN.py)
 
-
-
-## Evaluation:
-<!-- ![VGG19 Loss Curve](results/vgg19_loss_curve.png) -->
-
 The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
 <p align="center">
   <img src="assets/ConvVGG.jpg" alt="AlexNet architecture"/>
 </p>
+
+
+
+## Evaluation:
+<!-- ![VGG19 Loss Curve](results/vgg19_loss_curve.png) -->
 
 
 *Loss curves and evaluation metrics to be added after training.*
