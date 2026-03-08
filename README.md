@@ -48,15 +48,17 @@ graph TD
     style R fill:#ffecb3
     style U fill:#ffecb3
 ```
+
 With the following color coding:
 | Color      | Layer Type         |
 |------------|--------------------|
-| <span style="color:#e1f5fe; background-color:#222; padding:2px 8px; border-radius:4px;">Light Blue</span>   | Input Layer         |
-| <span style="color:#fff3e0; background-color:#222; padding:2px 8px; border-radius:4px;">Light Orange</span> | Convolutional Layer |
-| <span style="color:#f3e5f5; background-color:#222; padding:2px 8px; border-radius:4px;">Light Purple</span> | MaxPool Layer       |
-| <span style="color:#fce4ec; background-color:#222; padding:2px 8px; border-radius:4px;">Light Pink</span>   | Fully Connected (FC) Layer |
-| <span style="color:#ffecb3; background-color:#222; padding:2px 8px; border-radius:4px;">Light Yellow</span> | Dropout Layer       |
-| <span style="color:#c8e6c9; background-color:#222; padding:2px 8px; border-radius:4px;">Light Green</span>  | Output Layer        |
+| ![#e1f5fe](https://img.shields.io/badge/-%20-e1f5fe) | Input Layer         |
+| ![#fff3e0](https://img.shields.io/badge/-%20-fff3e0) | Convolutional Layer |
+| ![#f3e5f5](https://img.shields.io/badge/-%20-f3e5f5) | MaxPool Layer       |
+| ![#fce4ec](https://img.shields.io/badge/-%20-fce4ec) | Fully Connected (FC) Layer |
+| ![#ffecb3](https://img.shields.io/badge/-%20-ffecb3) | Dropout Layer       |
+| ![#c8e6c9](https://img.shields.io/badge/-%20-c8e6c9) | Output Layer        |
+
 
 
 [AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
