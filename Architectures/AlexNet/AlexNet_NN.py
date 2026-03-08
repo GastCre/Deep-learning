@@ -137,8 +137,12 @@ for epoch in range(NUM_EPOCHS):
 
 # %% Visualize the training loss
 plt.figure(figsize=(10, 7))
-sns.lineplot(x=range(NUM_EPOCHS), y=train_losses)
-sns.lineplot(x=range(NUM_EPOCHS), y=test_losses)
+sns.lineplot(x=range(NUM_EPOCHS), y=train_losses, label='Train Loss')
+sns.lineplot(x=range(NUM_EPOCHS), y=test_losses, label='Test Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.title('Training and Test Loss')
+plt.legend()
 plt.show()
 # %% Confusion matrix
 cm = confusion_matrix(y_test, y_test_hat)
