@@ -18,6 +18,12 @@ For simplicity, I have used the MNIST dataset and adapted the architecture, this
 [AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
 
 **Training**
+
+<p align="center">
+  <img src="Architectures/AlexNet/Train_test_output_MNIST.png" alt="AlexNet Loss Curve" width="70%"/>
+</p>
+
+
 For the training on the MNIST dataset, we used the following hyperparameters:
 
 | Hyperparameter   | Value        |
@@ -30,15 +36,11 @@ For the training on the MNIST dataset, we used the following hyperparameters:
 | Dropout          | 0.5         |
 | Input Size       | 3 x 224 x 224 |
 
-<p align="center">
-  <img src="Architectures/AlexNet/Train_test_output_MNIST.png" alt="AlexNet Loss Curve" width="80%"/>
-</p>
-
-Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting. Test accuracy of 98.94%.
+Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting.
 
 **Evaluation:**  
 <p align="center">
-  <img src="Architectures/AlexNet/Confusion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="80%"/>
+  <img src="Architectures/AlexNet/Confusion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="70%"/>
 </p>
 
 As seen in the confusion matrix, most of the classes were correctly identified, yielding a test accuracy of 98.94%.
