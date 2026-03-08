@@ -23,6 +23,8 @@ For simplicity, I have used the MNIST dataset and adapted the architecture, this
   <img src="Architectures/AlexNet/Train_test_output_MNIST.png" alt="AlexNet Loss Curve" width="70%"/>
 </p>
 
+Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting.
+
 
 For the training on the MNIST dataset, we used the following hyperparameters:
 
@@ -35,8 +37,6 @@ For the training on the MNIST dataset, we used the following hyperparameters:
 | Epochs           | 20          |
 | Dropout          | 0.5         |
 | Input Size       | 3 x 224 x 224 |
-
-Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting.
 
 #### Evaluation 
 
