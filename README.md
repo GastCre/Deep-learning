@@ -58,7 +58,7 @@ As seen in the confusion matrix, most of the classes were correctly identified, 
 
 The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
 <p align="center">
-  <img src="assets/ConvVGG.jpg" alt="AlexNet architecture" width="80%"/>
+  <img src="assets/ConvVGG.jpg" alt="AlexNet architecture"/>
 </p>
 
 
