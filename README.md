@@ -17,7 +17,7 @@ For simplicity, I have used the MNIST dataset and adapted the architecture, this
 
 [AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
 
-**Training**
+#### Training
 
 <p align="center">
   <img src="Architectures/AlexNet/Train_test_output_MNIST.png" alt="AlexNet Loss Curve" width="70%"/>
@@ -38,7 +38,8 @@ For the training on the MNIST dataset, we used the following hyperparameters:
 
 Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting.
 
-**Evaluation:**  
+#### Evaluation 
+
 <p align="center">
   <img src="Architectures/AlexNet/Confusion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="70%"/>
 </p>
