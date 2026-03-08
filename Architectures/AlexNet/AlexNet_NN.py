@@ -14,7 +14,7 @@ os.chdir("/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learnin
 
 # %% Imports
 
-# %%
+# %% AlexNet architecture. Local Response Normalization is skipped.
 
 
 class AlexNet(nn.Module):

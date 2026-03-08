@@ -5,6 +5,7 @@ This repository hold PyTorch implementations of classic deep learning architectu
 
 ### AlexNet  
 [AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
+
 [AlexNet paper](https://proceedings.neurips.cc/paper_files/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf)
 
 **Evaluation:**  
@@ -13,7 +14,7 @@ This repository hold PyTorch implementations of classic deep learning architectu
   <img src="Architectures/AlexNet/Confustion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="45%"/>
 </p>
 
-*Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting.*
+Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting.
 
 ---
 
