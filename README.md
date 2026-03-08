@@ -14,7 +14,7 @@ This repository hold PyTorch implementations of classic deep learning architectu
   <img src="Architectures/AlexNet/Confustion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="45%"/>
 </p>
 
-Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting. Final test accuracy of 98.94%.
+Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting. Test accuracy of 98.94%.
 
 ---
 
