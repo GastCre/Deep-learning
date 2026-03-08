@@ -8,7 +8,7 @@ This repository holds PyTorch implementations of classic deep learning architect
 
 The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
 <p align="center">
-  <img src="assets/ConvAlex.png" alt="AlexNet architecture">
+  <img src="assets/ConvAlex.png" alt="AlexNet architecture" width="80%"/>
 </p>
 
 
