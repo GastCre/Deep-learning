@@ -17,7 +17,7 @@ For simplicity, I have used the MNIST dataset and adapted the architecture, this
 
 [AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
 
-#### Training
+#### Training:
 
 <p align="center">
   <img src="Architectures/AlexNet/Train_test_output_MNIST.png" alt="AlexNet Loss Curve" width="70%"/>
@@ -38,7 +38,7 @@ For the training on the MNIST dataset, we used the following hyperparameters:
 | Dropout          | 0.5         |
 | Input Size       | 3 x 224 x 224 |
 
-#### Evaluation 
+#### Evaluation:
 
 <p align="center">
   <img src="Architectures/AlexNet/Confusion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="70%"/>
@@ -51,8 +51,16 @@ As seen in the confusion matrix, most of the classes were correctly identified, 
 ### VGG-19  
 [Architectures/VGG-19/VGG19_NN.py](Architectures/VGG-19/VGG19_NN.py)
 
-**Evaluation:**  
+
+
+## Evaluation:
 <!-- ![VGG19 Loss Curve](results/vgg19_loss_curve.png) -->
+
+The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
+<p align="center">
+  <img src="assets/ConvVGG.jpg" alt="AlexNet architecture" width="80%"/>
+</p>
+
 
 *Loss curves and evaluation metrics to be added after training.*
 
