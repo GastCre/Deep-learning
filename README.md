@@ -4,7 +4,7 @@ This repository holds PyTorch implementations of classic deep learning architect
 ## Architectures
 
 ### AlexNet  
-AlexNet (2012) is considered to be the first neural network (NN) that performed well on the ImageNet dataset (1.3M training images, 50k validation images and 100k test images containing over 1000 classes). 
+[AlexNet (2012)](https://proceedings.neurips.cc/paper_files/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf) is considered to be the first neural network (NN) that performed well on the ImageNet dataset (1.3M training images, 50k validation images and 100k test images containing over 1000 classes). 
 
 The architecture is as follows:
 ```mermaid
@@ -51,22 +51,21 @@ graph TD
 With the following color coding:
 | Color      | Layer Type         |
 |------------|--------------------|
-| ![#e1f5fe](https://via.placeholder.com/15/e1f5fe/000000?text=+) Light Blue   | Input Layer         |
-| ![#fff3e0](https://via.placeholder.com/15/fff3e0/000000?text=+) Light Orange | Convolutional Layer |
-| ![#f3e5f5](https://via.placeholder.com/15/f3e5f5/000000?text=+) Light Purple | MaxPool Layer       |
-| ![#fce4ec](https://via.placeholder.com/15/fce4ec/000000?text=+) Light Pink   | Fully Connected (FC) Layer |
-| ![#ffecb3](https://via.placeholder.com/15/ffecb3/000000?text=+) Light Yellow | Dropout Layer       |
-| ![#c8e6c9](https://via.placeholder.com/15/c8e6c9/000000?text=+) Light Green  | Output Layer        |
+| <span style="color:#e1f5fe; background-color:#222; padding:2px 8px; border-radius:4px;">Light Blue</span>   | Input Layer         |
+| <span style="color:#fff3e0; background-color:#222; padding:2px 8px; border-radius:4px;">Light Orange</span> | Convolutional Layer |
+| <span style="color:#f3e5f5; background-color:#222; padding:2px 8px; border-radius:4px;">Light Purple</span> | MaxPool Layer       |
+| <span style="color:#fce4ec; background-color:#222; padding:2px 8px; border-radius:4px;">Light Pink</span>   | Fully Connected (FC) Layer |
+| <span style="color:#ffecb3; background-color:#222; padding:2px 8px; border-radius:4px;">Light Yellow</span> | Dropout Layer       |
+| <span style="color:#c8e6c9; background-color:#222; padding:2px 8px; border-radius:4px;">Light Green</span>  | Output Layer        |
 
 
 [AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
 
-[AlexNet paper](https://proceedings.neurips.cc/paper_files/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf)
 
 **Evaluation:**  
 <p align="center">
   <img src="Architectures/AlexNet/Train_test_output_MNIST.png" alt="AlexNet Loss Curve" width="45%"/>
-  <img src="Architectures/AlexNet/Confustion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="45%"/>
+  <img src="Architectures/AlexNet/Confusion_matrix_MNIST.png" alt="AlexNet Confusion Matrix" width="45%"/>
 </p>
 
 Both training and test loss decrease rapidly and converge, indicating good learning and no overfitting. Test accuracy of 98.94%.
