@@ -144,6 +144,8 @@ plt.ylabel('Loss')
 plt.title('Training and Test Loss')
 plt.legend()
 plt.show()
+# %% Accuracy score
+print(f"Final Test Accuracy: {accuracy_score(y_test, y_test_hat):.4f}")
 # %% Confusion matrix
 cm = confusion_matrix(y_test, y_test_hat)
 plt.figure(figsize=(10, 7))
