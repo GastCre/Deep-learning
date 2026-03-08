@@ -153,3 +153,16 @@ plt.ylabel('True')
 plt.title('Confusion Matrix')
 plt.show()
 # %%
+# Plot some test images with their predicted and true labels
+plt.figure(figsize=(12, 6))
+for i in range(8):
+    plt.subplot(2, 4, i+1)
+    img = testloader.dataset[i]['image'].permute(1, 2, 0).cpu().numpy()
+    plt.imshow(img)
+    plt.title(
+        f"True: {y_test[i]}, Pred: {y_test_hat[i]}")
+    plt.axis('off')
+plt.suptitle('Sample Test Images with True and Predicted Labels')
+plt.tight_layout()
+plt.show()
+# %%
