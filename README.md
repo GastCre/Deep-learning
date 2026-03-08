@@ -11,17 +11,17 @@ For simplicity, I have used the MNIST dataset and adapted the architecture, this
 The architecture is as follows:
 ```mermaid
 graph TD
-    A[Input: 3 x 224 x 224] --> B[Conv1: 96 filters, 11x11, stride 4]
+    A[Input: 3 x 224 x 224] --> B[Conv1: 96 channels, 11x11, stride 4]
     B --> C[ReLU]
     C --> D[MaxPool1: 3x3, stride 2]
-    D --> E[Conv2: 256 filters, 5x5, padding 2]
+    D --> E[Conv2: 256 channels, 5x5, padding 2]
     E --> F[ReLU]
     F --> G[MaxPool2: 3x3, stride 2]
-    G --> H[Conv3: 384 filters, 3x3, padding 1]
+    G --> H[Conv3: 384 channels, 3x3, padding 1]
     H --> I[ReLU]
-    I --> J[Conv4: 384 filters, 3x3, padding 1]
+    I --> J[Conv4: 384 channels, 3x3, padding 1]
     J --> K[ReLU]
-    K --> L[Conv5: 256 filters, 3x3, padding 1]
+    K --> L[Conv5: 256 channels, 3x3, padding 1]
     L --> M[ReLU]
     M --> N[MaxPool3: 3x3, stride 2]
     N --> O[Flatten: 256 x 5 x 5 = 6400]
