@@ -152,5 +152,4 @@ plt.xlabel('Predicted')
 plt.ylabel('True')
 plt.title('Confusion Matrix')
 plt.show()
-
 # %%
