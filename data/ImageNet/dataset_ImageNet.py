@@ -18,10 +18,10 @@ def apply_transform(batch):
 
 
 # %%
-ds = load_dataset("ILSVRC/imagenet-1k")
+ds = load_dataset("evanarlian/imagenet_1k_resized_256")
 ds = ds.with_format("torch")
 ds = ds.with_transform(apply_transform)
-split = get_dataset_split_names("ILSVRC/imagenet-1k")
+split = get_dataset_split_names("evanarlian/imagenet_1k_resized_256")
 ds_train = ds[split[0]]
 ds_val = ds[split[1]]
 ds_test = ds[split[2]]
