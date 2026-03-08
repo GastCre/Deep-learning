@@ -48,6 +48,15 @@ graph TD
     style R fill:#ffecb3
     style U fill:#ffecb3
 ```
+With the following color coding:
+| Color      | Layer Type         |
+|------------|--------------------|
+| ![#e1f5fe](https://via.placeholder.com/15/e1f5fe/000000?text=+) Light Blue   | Input Layer         |
+| ![#fff3e0](https://via.placeholder.com/15/fff3e0/000000?text=+) Light Orange | Convolutional Layer |
+| ![#f3e5f5](https://via.placeholder.com/15/f3e5f5/000000?text=+) Light Purple | MaxPool Layer       |
+| ![#fce4ec](https://via.placeholder.com/15/fce4ec/000000?text=+) Light Pink   | Fully Connected (FC) Layer |
+| ![#ffecb3](https://via.placeholder.com/15/ffecb3/000000?text=+) Light Yellow | Dropout Layer       |
+| ![#c8e6c9](https://via.placeholder.com/15/c8e6c9/000000?text=+) Light Green  | Output Layer        |
 
 
 [AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
