@@ -6,9 +6,15 @@ This repository holds PyTorch implementations of classic deep learning architect
 ### AlexNet  
 [AlexNet (2012)](https://proceedings.neurips.cc/paper_files/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf) is considered to be the first neural network (NN) that performed well on the ImageNet dataset (1.3M training images, 50k validation images and 100k test images containing over 1000 classes). 
 
+The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
+<p align="center">
+  <img src="assets/ConvAlex.png" alt="AlexNet architecture">
+</p>
+
+
 For simplicity, I have used the MNIST dataset and adapted the architecture, this is, changing the number of classes from 1000 to 10, and doing some preprocessing on the grayscale images (basically repeating the gray channel 3 times, so the inputs of the original AlexNet would remain the same).
 
-The architecture is as follows:
+<!-- The architecture is as follows:
 ```mermaid
 graph TD
     A[Input: 3 x 224 x 224] --> B[Conv1: 96 channels, 11x11, stride 4]
@@ -59,7 +65,7 @@ With the following color coding:
 | ![#f3e5f5](https://img.shields.io/badge/-%20-f3e5f5) | MaxPool Layer       |
 | ![#fce4ec](https://img.shields.io/badge/-%20-fce4ec) | Fully Connected (FC) Layer |
 | ![#ffecb3](https://img.shields.io/badge/-%20-ffecb3) | Dropout Layer       |
-| ![#c8e6c9](https://img.shields.io/badge/-%20-c8e6c9) | Output Layer        |
+| ![#c8e6c9](https://img.shields.io/badge/-%20-c8e6c9) | Output Layer        | -->
 
 
 
