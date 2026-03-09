@@ -23,3 +23,8 @@ class VGG19(nn.Module):
         self.conv1_2 = nn.Conv2d(
             in_channels=64, out_channels=64, kernel_size=3, padding=1)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv2_1 = nn.Conv2d(
+            in_channels=64, out_channels=128, kernel_size=3, padding=1)
+        self.conv2_2 = nn.Conv2d(
+            in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
