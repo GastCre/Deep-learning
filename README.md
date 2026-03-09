@@ -50,7 +50,7 @@ As seen in the confusion matrix, most of the classes were correctly identified, 
 
 ### VGG-19  
 
-The VGG architecture (from Oxford's Visual Geometry Group) is basically a deeper version of the AlexNet, where it showed that deeper architectures led to improved results.
+The [VGG-19 (2014)](https://arxiv.org/pdf/1409.1556) architecture (from Oxford's Visual Geometry Group) is basically a deeper version of the AlexNet. This architecture showed that deeper networks led to improved results.
 [VGG-19 script](Architectures/VGG-19/VGG19_NN.py)
 
 The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
