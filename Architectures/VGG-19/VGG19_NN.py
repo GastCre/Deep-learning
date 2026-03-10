@@ -141,10 +141,10 @@ for epoch in range(NUM_EPOCHS):
         # update weights
         optimizer.step()
         loss_epochs.append(loss.item())
-        # print(
-        #     f"Epoch {epoch+1}/{NUM_EPOCHS}, Batch {i+1}/{len(trainloader)}, Loss: {loss.item():.4f}")
-    print(
-        f"Epoch {epoch+1}/{NUM_EPOCHS}, Average Loss: {np.mean(loss_epochs):.4f}")
+        print(
+            f"Epoch {epoch+1}/{NUM_EPOCHS}, Batch {i+1}/{len(trainloader)}, Loss: {loss.item():.4f}")
+    # print(
+    #     f"Epoch {epoch+1}/{NUM_EPOCHS}, Average Loss: {np.mean(loss_epochs):.4f}")
     train_losses.append(np.mean(loss_epochs))
     # Evaluate on the test set
     model.eval()

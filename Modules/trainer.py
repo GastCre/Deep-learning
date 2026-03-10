@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from torch.utils.data import DataLoader
+from sklearn.metrics import accuracy_score, confusion_matrix
 from data.MNIST_1D.dataset_MNIST import trainloader, testloader
 
 
@@ -46,8 +47,8 @@ class NN_Trainer():
             # Evaluate on the test set
             model.eval()
             test_loss_epochs = []
-            y_test = []
-            y_test_hat = []
+            self.y_test = []
+            self.y_test_hat = []
             for batch in testloader:
                 inputs, labels = batch['image'], batch['label']
                 inputs, labels = inputs.to(device), labels.to(device)
@@ -56,8 +57,8 @@ class NN_Trainer():
                     _, predicted = torch.max(outputs, 1)
                     loss = loss_fn(outputs, labels)
                     test_loss_epochs.append(loss.item())
-                y_test.extend(labels.cpu().numpy())
-                y_test_hat.extend(predicted.cpu().numpy())
+                self.y_test.extend(labels.cpu().numpy())
+                self.y_test_hat.extend(predicted.cpu().numpy())
             print(
                 f"Test Loss: {np.mean(test_loss_epochs):.4f}, Test Accuracy: {accuracy_score(y_test, y_test_hat):.4f}")
             test_losses.append(np.mean(test_loss_epochs))
@@ -76,4 +77,16 @@ class NN_Trainer():
         plt.ylabel('Loss')
         plt.title('Training and Test Loss')
         plt.legend()
+        plt.show()
+
+    def get_scores(self):
+        #  Accuracy score
+        print(
+            f"Final Test Accuracy: {accuracy_score(self.y_test, self.y_test_hat):.4f}")
+        # Confusion matrix
+        cm = confusion_matrix(self.y_test, self.y_test_hat)
+        plt.figure(figsize=(10, 7))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
         plt.show()
