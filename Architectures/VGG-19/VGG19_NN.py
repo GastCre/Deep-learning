@@ -1,7 +1,7 @@
 # %% Adding the system path to import the dataset module
 from sklearn.metrics import accuracy_score, confusion_matrix
 import seaborn as sns
-from data.MNIST_1D.dataset_MNIST import trainloader, testloader
+from data.CIFAR100.dataset_CIFAR100 import trainloader, testloader
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
@@ -20,87 +20,140 @@ class VGG19(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.conv1_1 = nn.Conv2d(
+            # Output shape [64, 224, 224]
             in_channels=3, out_channels=64, kernel_size=3, padding=1)
         self.conv1_2 = nn.Conv2d(
+            # Output shape [64, 224, 224]
             in_channels=64, out_channels=64, kernel_size=3, padding=1)
+        # Output shape [64, 112, 112]
         self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv2_1 = nn.Conv2d(
+            # Output shape [128, 112, 112]
             in_channels=64, out_channels=128, kernel_size=3, padding=1)
         self.conv2_2 = nn.Conv2d(
+            # Output shape [128, 112, 112]
             in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        # Output shape [128, 56, 56]
         self.maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv3_1 = nn.Conv2d(
+            # Output shape [256, 56, 56]
             in_channels=128, out_channels=256, kernel_size=3, padding=1)
         self.conv3_2 = nn.Conv2d(
+            # Output shape [256, 56, 56]
             in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.conv3_3 = nn.Conv2d(
+            # Output shape [256, 56, 56]
             in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.conv3_4 = nn.Conv2d(
+            # Output shape [256, 56, 56]
             in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        # Output shape [256, 28, 28]
         self.maxpool3 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv4_1 = nn.Conv2d(
+            # Output shape [512, 28, 28]
             in_channels=256, out_channels=512, kernel_size=3, padding=1)
         self.conv4_2 = nn.Conv2d(
+            # Output shape [512, 28, 28]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv4_3 = nn.Conv2d(
+            # Output shape [512, 28, 28]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv4_4 = nn.Conv2d(
+            # Output shape [512, 28, 28]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
+        # Output shape [512, 14, 14]
         self.maxpool4 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv5_1 = nn.Conv2d(
+            # Output shape [512, 14, 14]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv5_2 = nn.Conv2d(
+            # Output shape [512, 14, 14]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv5_3 = nn.Conv2d(
+            # Output shape [512, 14, 14]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv5_4 = nn.Conv2d(
+            # Output shape [512, 14, 14]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
+        # Output shape [512, 7, 7]
         self.maxpool5 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.flatten = nn.Flatten()
+        self.flatten = nn.Flatten()  # Output shape [512*7*7]
         self.fc1 = nn.Linear(in_features=512*7*7, out_features=4096)
         self.dropout1 = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(in_features=4096, out_features=4096)
         self.dropout2 = nn.Dropout(p=0.5)
-        self.fc3 = nn.Linear(in_features=4096, out_features=10)
+        self.fc3 = nn.Linear(in_features=4096, out_features=100)
         self.relu = nn.ReLU()
+        self.batchnorm1_1 = nn.BatchNorm2d(64)
+        self.batchnorm1_2 = nn.BatchNorm2d(64)
+        self.batchnorm2_1 = nn.BatchNorm2d(128)
+        self.batchnorm2_2 = nn.BatchNorm2d(128)
+        self.batchnorm3_1 = nn.BatchNorm2d(256)
+        self.batchnorm3_2 = nn.BatchNorm2d(256)
+        self.batchnorm3_3 = nn.BatchNorm2d(256)
+        self.batchnorm3_4 = nn.BatchNorm2d(256)
+        self.batchnorm4_1 = nn.BatchNorm2d(512)
+        self.batchnorm4_2 = nn.BatchNorm2d(512)
+        self.batchnorm4_3 = nn.BatchNorm2d(512)
+        self.batchnorm4_4 = nn.BatchNorm2d(512)
+        self.batchnorm5_1 = nn.BatchNorm2d(512)
+        self.batchnorm5_2 = nn.BatchNorm2d(512)
+        self.batchnorm5_3 = nn.BatchNorm2d(512)
+        self.batchnorm5_4 = nn.BatchNorm2d(512)
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = self.conv1_1(x)
+        x = self.batchnorm1_1(x)
         x = self.relu(x)
         x = self.conv1_2(x)
+        x = self.batchnorm1_2(x)
         x = self.relu(x)
         x = self.maxpool1(x)
         x = self.conv2_1(x)
+        x = self.batchnorm2_1(x)
         x = self.relu(x)
         x = self.conv2_2(x)
+        x = self.batchnorm2_2(x)
         x = self.relu(x)
         x = self.maxpool2(x)
         x = self.conv3_1(x)
+        x = self.batchnorm3_1(x)
         x = self.relu(x)
         x = self.conv3_2(x)
+        x = self.batchnorm3_2(x)
         x = self.relu(x)
         x = self.conv3_3(x)
+        x = self.batchnorm3_3(x)
         x = self.relu(x)
         x = self.conv3_4(x)
+        x = self.batchnorm3_4(x)
         x = self.relu(x)
         x = self.maxpool3(x)
         x = self.conv4_1(x)
+        x = self.batchnorm4_1(x)
         x = self.relu(x)
         x = self.conv4_2(x)
+        x = self.batchnorm4_2(x)
         x = self.relu(x)
         x = self.conv4_3(x)
+        x = self.batchnorm4_3(x)
         x = self.relu(x)
         x = self.conv4_4(x)
+        x = self.batchnorm4_4(x)
         x = self.relu(x)
         x = self.maxpool4(x)
         x = self.conv5_1(x)
+        x = self.batchnorm5_1(x)
         x = self.relu(x)
         x = self.conv5_2(x)
+        x = self.batchnorm5_2(x)
         x = self.relu(x)
         x = self.conv5_3(x)
+        x = self.batchnorm5_3(x)
         x = self.relu(x)
         x = self.conv5_4(x)
+        x = self.batchnorm5_4(x)
         x = self.relu(x)
         x = self.maxpool5(x)
         x = self.flatten(x)
@@ -119,16 +172,18 @@ class VGG19(nn.Module):
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 model = VGG19().to(device)
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+# L2 regularization is implemented by adding a weight decay in the optimizer
+optimizer = torch.optim.SGD(
+    model.parameters(), lr=0.001, weight_decay=5*1e-4, momentum=0.9)
 model.train()
 train_losses = []
 test_losses = []
-NUM_EPOCHS = 1
+NUM_EPOCHS = 50
 for epoch in range(NUM_EPOCHS):
     # Train the model
     loss_epochs = []
     for i, batch in enumerate(trainloader, 0):
-        inputs, labels = batch['image'], batch['label']
+        inputs, labels = batch[0], batch[1]
         inputs, labels = inputs.to(device), labels.to(device)
         # zero gradients
         optimizer.zero_grad()
@@ -152,7 +207,7 @@ for epoch in range(NUM_EPOCHS):
     y_test = []
     y_test_hat = []
     for batch in testloader:
-        inputs, labels = batch['image'], batch['label']
+        inputs, labels = batch[0], batch[1]
         inputs, labels = inputs.to(device), labels.to(device)
         with torch.no_grad():
             outputs = model(inputs)

@@ -90,3 +90,5 @@ class NN_Trainer():
         plt.xlabel('Predicted')
         plt.ylabel('True')
         plt.show()
+
+    # def store_results(self):

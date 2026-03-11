@@ -11,6 +11,8 @@ transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),    # Back to tensor, now shape [1, 227, 227]
     transforms.Lambda(lambda x: x.repeat(3, 1, 1)),  # Convert 1 channel to 3
+    transforms.Normalize(mean=[0.1307, 0.1307, 0.1307],  # MNIST mean
+                         std=[0.3081, 0.3081, 0.3081]),   # MNIST std
 ])
 
 
@@ -27,7 +29,7 @@ split = get_dataset_split_names("ylecun/mnist")
 ds_train = ds[split[0]]
 ds_test = ds[split[1]]
 # %%
-BATCH_SIZE = 32
+BATCH_SIZE = 256
 trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True)
 testloader = DataLoader(ds_test, batch_size=BATCH_SIZE, shuffle=False)
 # %%
