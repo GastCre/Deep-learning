@@ -61,7 +61,7 @@ The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.g
 
 #### Training:
 
-For the MNIST dataset, the VGG19 network is an overkill and difficult to train. Therefore, for this architecture I used the CIFAR-100 dataset and added batch normalization after each convolutional layer.
+For the MNIST dataset, the VGG19 network is an overkill and difficult to train. Therefore, for this architecture I used the CIFAR-100 dataset and added batch normalization after each convolutional layer. For this specific dataset, we resize the images as with the MNIST to the input size shown below, and also normalize them by channel.
 
 
 For the training on the CIFAR-100 dataset, we used the following hyperparameters:
