@@ -91,7 +91,7 @@ For the training on the CIFAR-100 dataset, we used the following hyperparameters
 
 The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
 <p align="center">
-  <img src="assets/ResNet.png" alt="ResNet architecture" width="80%"/>
+  <img src="assets/ResNet.png" alt="ResNet architecture"/>
 </p>
 
 
@@ -103,5 +103,5 @@ The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.g
 
 The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
 <p align="center">
-  <img src="assets/UNet.png" alt="UNet architecture" width="80%"/>
+  <img src="assets/UNet.png" alt="UNet architecture"/>
 </p>
