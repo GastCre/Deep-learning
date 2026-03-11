@@ -12,7 +12,7 @@ The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.g
 </p>
 
 
-For simplicity, I have used the MNIST dataset and adapted the architecture, this is, changing the number of classes from 1000 to 10, and doing some preprocessing on the grayscale images (basically repeating the gray channel 3 times, so the inputs of the original AlexNet would remain the same).
+For simplicity, I have used the [MNIST dataset](data/MNIST_1D/dataset_MNIST.py) and adapted the architecture, this is, changing the number of classes from 1000 to 10, and doing some preprocessing on the grayscale images (basically repeating the gray channel 3 times, so the inputs of the original AlexNet would remain the same).
 
 
 [AlexNet script](Architectures/AlexNet/AlexNet_NN.py)
@@ -61,7 +61,7 @@ The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.g
 
 #### Training:
 
-For the MNIST dataset, the VGG19 network is an overkill and difficult to train. Therefore, for this architecture I used the CIFAR-100 dataset and added batch normalization after each convolutional layer. For this specific dataset, we resize the images as with the MNIST to the input size shown below, and also normalize them by channel.
+For the MNIST dataset, the VGG19 network is an overkill and difficult to train. Therefore, for this architecture I used the [CIFAR-100](data/CIFAR100/dataset_CIFAR100.py) dataset and added batch normalization after each convolutional layer. For this specific dataset, we resize the images as with the MNIST to the input size shown below, and also normalize them by channel.
 
 
 For the training on the CIFAR-100 dataset, we used the following hyperparameters:
