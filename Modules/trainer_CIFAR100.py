@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, confusion_matrix
-from data.MNIST_1D.dataset_MNIST import trainloader, testloader
+from data.CIFAR100.dataset_CIFAR100 import trainloader, testloader
 
 
-class NN_Trainer():
+class NN_Trainer_CIFAR100():
     def __init__(self, model, NUM_EPOCHS=20) -> None:
         self.model = model
         self.NUM_EPOCHS = NUM_EPOCHS
@@ -26,7 +26,7 @@ class NN_Trainer():
             # Train the model
             loss_epochs = []
             for i, batch in enumerate(trainloader, 0):
-                inputs, labels = batch['image'], batch['label']
+                inputs, labels = batch[0], batch[1]
                 inputs, labels = inputs.to(device), labels.to(device)
                 # zero gradients
                 optimizer.zero_grad()
@@ -50,7 +50,7 @@ class NN_Trainer():
             self.y_test = []
             self.y_test_hat = []
             for batch in testloader:
-                inputs, labels = batch['image'], batch['label']
+                inputs, labels = batch[0], batch[1]
                 inputs, labels = inputs.to(device), labels.to(device)
                 with torch.no_grad():
                     outputs = model(inputs)
@@ -60,7 +60,7 @@ class NN_Trainer():
                 self.y_test.extend(labels.cpu().numpy())
                 self.y_test_hat.extend(predicted.cpu().numpy())
             print(
-                f"Test Loss: {np.mean(test_loss_epochs):.4f}, Test Accuracy: {accuracy_score(y_test, y_test_hat):.4f}")
+                f"Test Loss: {np.mean(test_loss_epochs):.4f}, Test Accuracy: {accuracy_score(self.y_test, self.y_test_hat):.4f}")
             test_losses.append(np.mean(test_loss_epochs))
             # Set the model back to train mode for the next epoch
             model.train()
