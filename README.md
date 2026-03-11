@@ -55,7 +55,7 @@ The [VGG-19 (2014)](https://arxiv.org/pdf/1409.1556) architecture (from Oxford's
 
 The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
 <p align="center">
-  <img src="assets/ConvVGG.jpg" alt="AlexNet architecture"/>
+  <img src="assets/ConvVGG.jpg" alt="VGG19 architecture"/>
 </p>
 
 
@@ -86,3 +86,22 @@ For the training on the CIFAR-100 dataset, we used the following hyperparameters
 *Loss curves and evaluation metrics to be added after training.*
 
 ---
+
+### ResNet
+
+The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
+<p align="center">
+  <img src="assets/ResNet.png" alt="ResNet architecture" width="80%"/>
+</p>
+
+
+
+
+---
+
+### UNet
+
+The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.github.io/udlbook/)):
+<p align="center">
+  <img src="assets/UNet.png" alt="UNet architecture" width="80%"/>
+</p>
