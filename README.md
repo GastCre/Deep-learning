@@ -59,6 +59,25 @@ The architecture is as follows (image from [Simon J.D. Prince](https://udlbook.g
 </p>
 
 
+#### Training:
+
+For the MNIST dataset, the VGG19 network is an overkill and difficult to train. Therefore, for this architecture I used the CIFAR-100 dataset and added batch normalization after each convolutional layer.
+
+
+For the training on the CIFAR-100 dataset, we used the following hyperparameters:
+
+| Hyperparameter   | Value        |
+|------------------|-------------|
+| Optimizer        | SGD         |
+|                  | momentum = 0.9| 
+|                  | weight decay = $5\times10^{-4}$ |
+| Learning Rate    | 0.001       |
+| Loss Function    | CrossEntropyLoss |
+| Batch Size       | 32          |
+| Epochs           | 50          |
+| Dropout          | 0.5         |
+| Input Size       | 3 x 224 x 224 |
+
 
 ## Evaluation:
 <!-- ![VGG19 Loss Curve](results/vgg19_loss_curve.png) -->
