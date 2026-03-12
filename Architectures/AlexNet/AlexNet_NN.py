@@ -1,4 +1,5 @@
 # %% Adding the system path to import the dataset module
+from Modules.trainer_CIFAR100 import NN_Trainer_CIFAR100
 from sklearn.metrics import accuracy_score, confusion_matrix
 import seaborn as sns
 from data.MNIST_1D.dataset_MNIST import trainloader, testloader
@@ -52,7 +53,7 @@ class AlexNet(nn.Module):
         self.fc2 = nn.Linear(in_features=4096, out_features=4096)
         self.dropout2 = nn.Dropout(p=0.5)
         # Output shape [10] - MNIST has 10 classes
-        self.fc3 = nn.Linear(in_features=4096, out_features=10)
+        self.fc3 = nn.Linear(in_features=4096, out_features=100)
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=1)
 
@@ -82,6 +83,11 @@ class AlexNet(nn.Module):
         # x = self.softmax(x)
         return x
 
+
+# %%
+
+trainer = NN_Trainer_CIFAR100(model=AlexNet(), NUM_EPOCHS=10)
+trainer.train()
 
 # %% Training the model
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")

@@ -14,6 +14,10 @@ class NN_Trainer_CIFAR100():
     def __init__(self, model, NUM_EPOCHS=20) -> None:
         self.model = model
         self.NUM_EPOCHS = NUM_EPOCHS
+        self.train_losses = []
+        self.test_losses = []
+        self.y_test = []
+        self.y_test_hat = []
 
     def train(self):
         device = torch.device(
@@ -22,8 +26,6 @@ class NN_Trainer_CIFAR100():
         loss_fn = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
         model.train()
-        train_losses = []
-        test_losses = []
         for epoch in range(self.NUM_EPOCHS):
             # Train the model
             loss_epochs = []
@@ -45,12 +47,10 @@ class NN_Trainer_CIFAR100():
                 #     f"Epoch {epoch+1}/{self.NUM_EPOCHS}, Batch {i+1}/{len(trainloader)}, Loss: {loss.item():.4f}")
             print(
                 f"Epoch {epoch+1}/{self.NUM_EPOCHS}, Average Loss: {np.mean(loss_epochs):.4f}")
-            train_losses.append(np.mean(loss_epochs))
+            self.train_losses.append(np.mean(loss_epochs))
             # Evaluate on the test set
             model.eval()
             test_loss_epochs = []
-            self.y_test = []
-            self.y_test_hat = []
             for batch in testloader:
                 inputs, labels = batch[0], batch[1]
                 inputs, labels = inputs.to(device), labels.to(device)
@@ -63,7 +63,7 @@ class NN_Trainer_CIFAR100():
                 self.y_test_hat.extend(predicted.cpu().numpy())
             print(
                 f"Test Loss: {np.mean(test_loss_epochs):.4f}, Test Accuracy: {accuracy_score(self.y_test, self.y_test_hat):.4f}")
-            test_losses.append(np.mean(test_loss_epochs))
+            self.test_losses.append(np.mean(test_loss_epochs))
             # Save loss plot after each epoch
             self.plot_train_test()
             os.makedirs("train_progress", exist_ok=True)
@@ -71,14 +71,12 @@ class NN_Trainer_CIFAR100():
             plt.close()
             # Set the model back to train mode for the next epoch
             model.train()
-        self.train_losses = train_losses
-        self.test_losses = test_losses
 
     def plot_train_test(self):
         plt.figure(figsize=(10, 7))
-        sns.lineplot(x=range(self.NUM_EPOCHS),
+        sns.lineplot(x=range(len(self.train_losses)),
                      y=self.train_losses, label='Train Loss')
-        sns.lineplot(x=range(self.NUM_EPOCHS),
+        sns.lineplot(x=range(len(self.test_losses)),
                      y=self.test_losses, label='Test Loss')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
