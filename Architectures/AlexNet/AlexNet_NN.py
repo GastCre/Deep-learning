@@ -84,12 +84,15 @@ class AlexNet(nn.Module):
         return x
 
 
-# %%
+# %% Using the trainer module to train the model
 
-trainer = NN_Trainer_CIFAR100(model=AlexNet(), NUM_EPOCHS=10)
+SCRIPT_DIR = "/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning/Architectures/AlexNet/"
+
+trainer = NN_Trainer_CIFAR100(model=AlexNet(
+), NUM_EPOCHS=10, save_dir=os.path.join(SCRIPT_DIR, "train_progress"))
 trainer.train()
 
-# %% Training the model
+# %% Training the model without the trainer module
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 model = AlexNet().to(device)
 loss_fn = nn.CrossEntropyLoss()

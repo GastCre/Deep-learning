@@ -11,13 +11,15 @@ from data.CIFAR100.dataset_CIFAR100 import trainloader, testloader
 
 
 class NN_Trainer_CIFAR100():
-    def __init__(self, model, NUM_EPOCHS=20) -> None:
+    def __init__(self, model, NUM_EPOCHS=20, save_dir="train_progress") -> None:
         self.model = model
         self.NUM_EPOCHS = NUM_EPOCHS
         self.train_losses = []
         self.test_losses = []
         self.y_test = []
         self.y_test_hat = []
+        self.save_dir = save_dir
+        os.makedirs(self.save_dir, exist_ok=True)
 
     def train(self):
         device = torch.device(
@@ -66,8 +68,7 @@ class NN_Trainer_CIFAR100():
             self.test_losses.append(np.mean(test_loss_epochs))
             # Save loss plot after each epoch
             self.plot_train_test()
-            os.makedirs("train_progress", exist_ok=True)
-            plt.savefig(f"train_progress/loss_plot_epoch_{epoch+1}.png")
+            plt.savefig(os.path.join(self.save_dir, f"loss_plot.png"))
             plt.close()
             # Set the model back to train mode for the next epoch
             model.train()
