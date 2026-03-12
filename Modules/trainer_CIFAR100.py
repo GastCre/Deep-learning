@@ -100,5 +100,3 @@ class NN_Trainer_CIFAR100():
         plt.xlabel('Predicted')
         plt.ylabel('True')
         plt.show()
-
-    # def store_results(self):
