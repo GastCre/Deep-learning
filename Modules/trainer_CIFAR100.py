@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -62,12 +64,17 @@ class NN_Trainer_CIFAR100():
             print(
                 f"Test Loss: {np.mean(test_loss_epochs):.4f}, Test Accuracy: {accuracy_score(self.y_test, self.y_test_hat):.4f}")
             test_losses.append(np.mean(test_loss_epochs))
+            # Save loss plot after each epoch
+            self.plot_train_test()
+            os.makedirs("train_progress", exist_ok=True)
+            plt.savefig(f"train_progress/loss_plot_epoch_{epoch+1}.png")
+            plt.close()
             # Set the model back to train mode for the next epoch
             model.train()
         self.train_losses = train_losses
         self.test_losses = test_losses
 
-    def visualize(self):
+    def plot_train_test(self):
         plt.figure(figsize=(10, 7))
         sns.lineplot(x=range(self.NUM_EPOCHS),
                      y=self.train_losses, label='Train Loss')
@@ -77,6 +84,9 @@ class NN_Trainer_CIFAR100():
         plt.ylabel('Loss')
         plt.title('Training and Test Loss')
         plt.legend()
+
+    def visualize(self):
+        self.plot_train_test()
         plt.show()
 
     def get_scores(self):
