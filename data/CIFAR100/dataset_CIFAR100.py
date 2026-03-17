@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 # %%
 
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    # transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(
         (0.5071, 0.4867, 0.4408),
@@ -34,7 +34,7 @@ test_dataset = torchvision.datasets.CIFAR100(
     transform=transform
 )
 # %% Dataloaders
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 
 trainloader = DataLoader(
     train_dataset,

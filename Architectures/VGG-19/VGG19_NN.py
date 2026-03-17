@@ -1,6 +1,7 @@
 # %% Adding the system path to import the dataset module
 from sklearn.metrics import accuracy_score, confusion_matrix
 import seaborn as sns
+from Modules.trainer_CIFAR100 import NN_Trainer_CIFAR100
 from data.CIFAR100.dataset_CIFAR100 import trainloader, testloader
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,71 +15,72 @@ os.chdir("/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learnin
 
 
 # %%
-
+# CIFAR input size is 32x32, so we slightly change the VGG architecture
+# (basically the input of the first fully connected layer)
 
 class VGG19(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.conv1_1 = nn.Conv2d(
-            # Output shape [64, 224, 224]
+            # Output shape [64, 32, 32]
             in_channels=3, out_channels=64, kernel_size=3, padding=1)
         self.conv1_2 = nn.Conv2d(
-            # Output shape [64, 224, 224]
+            # Output shape [64, 32, 32]
             in_channels=64, out_channels=64, kernel_size=3, padding=1)
-        # Output shape [64, 112, 112]
+        # Output shape [64, 16, 16]
         self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv2_1 = nn.Conv2d(
-            # Output shape [128, 112, 112]
+            # Output shape [128, 16, 16]
             in_channels=64, out_channels=128, kernel_size=3, padding=1)
         self.conv2_2 = nn.Conv2d(
-            # Output shape [128, 112, 112]
+            # Output shape [128, 16, 16]
             in_channels=128, out_channels=128, kernel_size=3, padding=1)
-        # Output shape [128, 56, 56]
+        # Output shape [128, 8, 8]
         self.maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv3_1 = nn.Conv2d(
-            # Output shape [256, 56, 56]
+            # Output shape [256, 8, 8]
             in_channels=128, out_channels=256, kernel_size=3, padding=1)
         self.conv3_2 = nn.Conv2d(
-            # Output shape [256, 56, 56]
+            # Output shape [256, 8, 8]
             in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.conv3_3 = nn.Conv2d(
-            # Output shape [256, 56, 56]
+            # Output shape [256, 8, 8]
             in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.conv3_4 = nn.Conv2d(
-            # Output shape [256, 56, 56]
+            # Output shape [256, 8, 8]
             in_channels=256, out_channels=256, kernel_size=3, padding=1)
-        # Output shape [256, 28, 28]
+        # Output shape [256, 4, 4]
         self.maxpool3 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv4_1 = nn.Conv2d(
-            # Output shape [512, 28, 28]
+            # Output shape [512, 4, 4]
             in_channels=256, out_channels=512, kernel_size=3, padding=1)
         self.conv4_2 = nn.Conv2d(
-            # Output shape [512, 28, 28]
+            # Output shape [512, 4, 4]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv4_3 = nn.Conv2d(
-            # Output shape [512, 28, 28]
+            # Output shape [512, 4, 4]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv4_4 = nn.Conv2d(
-            # Output shape [512, 28, 28]
+            # Output shape [512, 4, 4]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
-        # Output shape [512, 14, 14]
+        # Output shape [512, 2, 2]
         self.maxpool4 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv5_1 = nn.Conv2d(
-            # Output shape [512, 14, 14]
+            # Output shape [512, 2, 2]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv5_2 = nn.Conv2d(
-            # Output shape [512, 14, 14]
+            # Output shape [512, 2, 2]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv5_3 = nn.Conv2d(
-            # Output shape [512, 14, 14]
+            # Output shape [512, 2, 2]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         self.conv5_4 = nn.Conv2d(
-            # Output shape [512, 14, 14]
+            # Output shape [512, 2, 2]
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
-        # Output shape [512, 7, 7]
+        # Output shape [512, 1, 1]
         self.maxpool5 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.flatten = nn.Flatten()  # Output shape [512*7*7]
-        self.fc1 = nn.Linear(in_features=512*7*7, out_features=4096)
+        self.flatten = nn.Flatten()  # Output shape [512*1*1]
+        self.fc1 = nn.Linear(in_features=512*1*1, out_features=4096)
         self.dropout1 = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(in_features=4096, out_features=4096)
         self.dropout2 = nn.Dropout(p=0.5)
@@ -169,6 +171,12 @@ class VGG19(nn.Module):
 
 
 # %% Training the model
+SCRIPT_DIR = "/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning/Architectures/VGG-19/"
+trainer = NN_Trainer_CIFAR100(
+    model=VGG19(), NUM_EPOCHS=50, save_dir=os.path.join(SCRIPT_DIR, "train_progress"))
+trainer.train()
+
+# %%
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 model = VGG19().to(device)
 loss_fn = nn.CrossEntropyLoss()
