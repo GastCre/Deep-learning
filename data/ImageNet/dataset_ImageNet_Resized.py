@@ -26,7 +26,7 @@ ds_train = ds[split[0]]
 ds_val = ds[split[1]]
 ds_test = ds[split[2]]
 # %%
-BATCH_SIZE = 16
+BATCH_SIZE = 128
 trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True)
 validationloader = DataLoader(ds_val, batch_size=BATCH_SIZE, shuffle=True)
 testloader = DataLoader(ds_test, batch_size=BATCH_SIZE, shuffle=True)
