@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, confusion_matrix
-from data.CIFAR100.dataset_CIFAR100 import trainloader, testloader
+from data.ImageNet.dataset_ImageNet_Resized import trainloader, testloader, validationloader
 
 
-class NN_Trainer_CIFAR100():
+class NN_Trainer_ImageNet_Resized():
     def __init__(self, model, NUM_EPOCHS=20, save_dir="train_progress") -> None:
         self.model = model
         self.NUM_EPOCHS = NUM_EPOCHS
@@ -33,7 +33,7 @@ class NN_Trainer_CIFAR100():
             # Train the model
             loss_epochs = []
             for i, batch in enumerate(trainloader, 0):
-                inputs, labels = batch[0], batch[1]
+                inputs, labels = batch['image'], batch['label']
                 inputs, labels = inputs.to(device), labels.to(device)
                 # zero gradients
                 optimizer.zero_grad()
@@ -55,7 +55,7 @@ class NN_Trainer_CIFAR100():
             model.eval()
             test_loss_epochs = []
             for batch in testloader:
-                inputs, labels = batch[0], batch[1]
+                inputs, labels = batch['image'], batch['label']
                 inputs, labels = inputs.to(device), labels.to(device)
                 with torch.no_grad():
                     outputs = model(inputs)

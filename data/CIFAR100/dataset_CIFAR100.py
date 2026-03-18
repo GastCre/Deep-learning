@@ -34,7 +34,7 @@ test_dataset = torchvision.datasets.CIFAR100(
     transform=transform
 )
 # %% Dataloaders
-BATCH_SIZE = 128
+BATCH_SIZE = 256
 
 trainloader = DataLoader(
     train_dataset,

@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 
 transform = transforms.Compose([
     # We use 227x227 instead of 224x224 as noticed by Karpathy (see Wikipedia entry of AlexNet)
-    transforms.Resize((227, 227)),
+    transforms.Resize((256, 256)),
     transforms.ToTensor(),    # Back to tensor, now shape [1, 227, 227]
 ])
 
@@ -26,7 +26,7 @@ ds_train = ds[split[0]]
 ds_val = ds[split[1]]
 ds_test = ds[split[2]]
 # %%
-BATCH_SIZE = 4
+BATCH_SIZE = 16
 trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True)
 validationloader = DataLoader(ds_val, batch_size=BATCH_SIZE, shuffle=True)
 testloader = DataLoader(ds_test, batch_size=BATCH_SIZE, shuffle=True)
