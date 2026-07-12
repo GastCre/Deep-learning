@@ -9,6 +9,8 @@ transform = transforms.Compose([
     # We use 227x227 instead of 224x224 as noticed by Karpathy (see Wikipedia entry of AlexNet)
     transforms.Resize((256, 256)),
     transforms.ToTensor(),    # Back to tensor, now shape [1, 227, 227]
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225]),
 ])
 
 

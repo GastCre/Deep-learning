@@ -6,6 +6,8 @@ dist/
 wheels/
 *.egg-info
 
+#ML checkpoint files
+*.pt
 # Virtual environments
 .venv
 

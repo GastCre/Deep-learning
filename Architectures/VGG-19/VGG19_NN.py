@@ -1,20 +1,27 @@
 # %% Adding the system path to import the dataset module
-import torch
-import torchvision
-import torchvision.transforms as transforms
-import torch.nn as nn
-from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
-import numpy as np
-from data.ImageNet.dataset_ImageNet_Resized import trainloader, testloader, validationloader
-from Modules.trainer_ImageNet_Resized import NN_Trainer_ImageNet_Resized
-import seaborn as sns
+from data.ImageNet.dataset_ImageNet100 import trainloader, testloader, validationloader
 from sklearn.metrics import accuracy_score, confusion_matrix
+import seaborn as sns
+from Modules.trainer_ImageNet100 import NN_Trainer_ImageNet100
+import numpy as np
+import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+import torch.nn as nn
+import torchvision.transforms as transforms
+import torchvision
+import torch
 import os
 os.chdir("/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning")
 
 
+# Cap MPS allocation below physical RAM so an oversized batch raises a catchable
+# OOM error instead of exhausting unified memory and restarting the machine.
+# Must be set before torch initializes the MPS backend. MPS requires
+# low <= high, so lower both (defaults are 1.4 / 1.7).
+os.environ["PYTORCH_MPS_LOW_WATERMARK_RATIO"] = "0.6"
+os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.7"
 # %%
+
 
 class VGG19(nn.Module):
     def __init__(self) -> None:
@@ -77,9 +84,9 @@ class VGG19(nn.Module):
             in_channels=512, out_channels=512, kernel_size=3, padding=1)
         # Output shape [512, 8, 8]
         self.maxpool5 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.flatten = nn.Flatten()  # Output shape [512*8*8]
-        # Let's decrease the number of original features by 4
-        self.fc1 = nn.Linear(in_features=512*8*8, out_features=4096)
+        # Output shape [512*7*7] for 224x224 ImageNet input (5 maxpools)
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(in_features=512*7*7, out_features=4096)
         self.dropout1 = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(in_features=4096, out_features=4096)
         self.dropout2 = nn.Dropout(p=0.5)
@@ -170,95 +177,44 @@ class VGG19(nn.Module):
 
 
 # %% Training the model
-SCRIPT_DIR = "/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning/Architectures/VGG-19/"
-trainer = NN_Trainer_ImageNet_Resized(
-    model=VGG19(), NUM_EPOCHS=20, save_dir=os.path.join(SCRIPT_DIR, "train_progress"))
-trainer.train()
+# This guard is REQUIRED when running as a script (`python VGG19_NN.py`):
+# the DataLoader uses `spawn` workers, which re-import this file. Without the
+# guard, every worker would re-execute the training below (a fork bomb). It is
+# also True in a Jupyter kernel, so cell-by-cell use still works.
+if __name__ == "__main__":
+    SCRIPT_DIR = "/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning/Architectures/VGG-19/"
 
-# %%
-device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-model = VGG19().to(device)
-loss_fn = nn.CrossEntropyLoss()
-# L2 regularization is implemented by adding a weight decay in the optimizer
-optimizer = torch.optim.SGD(
-    model.parameters(), lr=0.001, weight_decay=5*1e-4, momentum=0.9)
-model.train()
-train_losses = []
-test_losses = []
-NUM_EPOCHS = 50
-for epoch in range(NUM_EPOCHS):
-    # Train the model
-    loss_epochs = []
-    for i, batch in enumerate(trainloader, 0):
-        inputs, labels = batch[0], batch[1]
-        inputs, labels = inputs.to(device), labels.to(device)
-        # zero gradients
-        optimizer.zero_grad()
-        # forward pass
-        outputs = model(inputs)
-        # calculate loss
-        loss = loss_fn(outputs, labels)
-        # backward pass
-        loss.backward()
-        # update weights
-        optimizer.step()
-        loss_epochs.append(loss.item())
-        print(
-            f"Epoch {epoch+1}/{NUM_EPOCHS}, Batch {i+1}/{len(trainloader)}, Loss: {loss.item():.4f}")
-    # print(
-    #     f"Epoch {epoch+1}/{NUM_EPOCHS}, Average Loss: {np.mean(loss_epochs):.4f}")
-    train_losses.append(np.mean(loss_epochs))
-    # Evaluate on the test set
-    model.eval()
-    test_loss_epochs = []
-    y_test = []
-    y_test_hat = []
-    for batch in testloader:
-        inputs, labels = batch[0], batch[1]
-        inputs, labels = inputs.to(device), labels.to(device)
-        with torch.no_grad():
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs, 1)
-            loss = loss_fn(outputs, labels)
-            test_loss_epochs.append(loss.item())
-        y_test.extend(labels.cpu().numpy())
-        y_test_hat.extend(predicted.cpu().numpy())
+    # --- Memory smoke test: run ONE batch to confirm BATCH_SIZE fits in MPS
+    # memory before the full run. Peak memory is reached within a single
+    # forward -> backward -> step. Throwaway model, doesn't touch trainer state.
+    device = torch.device(
+        "mps" if torch.backends.mps.is_available() else "cpu")
+    smoke_model = VGG19().to(device)
+    smoke_model.train()
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(
+        smoke_model.parameters(), lr=0.01, weight_decay=5*1e-4, momentum=0.9)
+
+    batch = next(iter(trainloader))
+    inputs, labels = batch['image'].to(device), batch['label'].to(device)
+    optimizer.zero_grad()
+    loss = loss_fn(smoke_model(inputs), labels)
+    loss.backward()
+    optimizer.step()
     print(
-        f"Test Loss: {np.mean(test_loss_epochs):.4f}, Test Accuracy: {accuracy_score(y_test, y_test_hat):.4f}")
-    test_losses.append(np.mean(test_loss_epochs))
-    # Set the model back to train mode for the next epoch
-    model.train()
+        f"one batch OK — inputs {tuple(inputs.shape)}, loss {loss.item():.3f}")
+    if device.type == "mps":
+        print(
+            f"MPS peak allocated: {torch.mps.driver_allocated_memory() / 1e9:.2f} GB")
 
-# %% Visualize the training loss
-plt.figure(figsize=(10, 7))
-sns.lineplot(x=range(NUM_EPOCHS), y=train_losses, label='Train Loss')
-sns.lineplot(x=range(NUM_EPOCHS), y=test_losses, label='Test Loss')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.title('Training and Test Loss')
-plt.legend()
-plt.show()
-# %% Accuracy score
-print(f"Final Test Accuracy: {accuracy_score(y_test, y_test_hat):.4f}")
-# %% Confusion matrix
-cm = confusion_matrix(y_test, y_test_hat)
-plt.figure(figsize=(10, 7))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-plt.xlabel('Predicted')
-plt.ylabel('True')
-plt.title('Confusion Matrix')
-plt.show()
-# %%
-# Plot some test images with their predicted and true labels
-plt.figure(figsize=(12, 6))
-for i in range(8):
-    plt.subplot(2, 4, i+1)
-    img = testloader.dataset[i][0].permute(1, 2, 0).cpu().numpy()
-    plt.imshow(img)
-    plt.title(
-        f"True: {y_test[i]}, Pred: {y_test_hat[i]}")
-    plt.axis('off')
-plt.suptitle('Sample Test Images with True and Predicted Labels')
-plt.tight_layout()
-plt.show()
+    # Free the smoke-test tensors/model before running real training.
+    del smoke_model, optimizer, loss, inputs, labels
+    if device.type == "mps":
+        torch.mps.empty_cache()
+
+    # --- Full training ---
+    trainer = NN_Trainer_ImageNet100(
+        model=VGG19(), NUM_EPOCHS=25, save_dir=os.path.join(SCRIPT_DIR, "train_progress"))
+    trainer.train()
+    trainer.get_scores()
 # %%
