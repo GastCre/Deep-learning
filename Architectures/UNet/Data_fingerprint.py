@@ -8,7 +8,7 @@ import numpy as np
 
 # Reading data
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-DATA_FOLDER = "/Users/gastoncrecikeinbaum/Library/CloudStorage/SynologyDrive-XDMD/Sources/2025 Xyall pilot project/AZ"
+DATA_FOLDER = "/Users/gastoncrecikeinbaum/Library/CloudStorage/SynologyDrive-XDMD/Sources/2025 Xyall pilot project"
 data_path = Path(DATA_FOLDER)
 
 # Pixels sampled per image for intensity stats (full 4K images are overkill)
