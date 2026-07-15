@@ -14,15 +14,17 @@ from Data_fingerprint import fingerprint
 
 
 class NN_Trainer_Segmentation():
-    def __init__(self, model, NUM_EPOCHS=20, BATCH_SIZE=32, LEARNING_RATE=0.01, WEIGHT_DECAY=1e-4, MOMENTUM=0.9, save_dir="train_progress", data_folder=None, train_split=0.7, validation_split=0.15) -> None:
+    def __init__(self, model, NUM_EPOCHS=20, BATCH_SIZE=32, LEARNING_RATE=0.01, WEIGHT_DECAY=1e-4, MOMENTUM=0.9, OPT_STEP_SIZE=30, OPT_GAMMA=0.1, save_dir="train_progress", data_folder=None, TRAIN_SPLIT=0.7, VAL_SPLIT=0.15) -> None:
         self.model = model
         self.NUM_EPOCHS = NUM_EPOCHS
         self.BATCH_SIZE = BATCH_SIZE
         self.LEARNING_RATE = LEARNING_RATE
         self.WEIGHT_DECAY = WEIGHT_DECAY
         self.MOMENTUM = MOMENTUM
-        self.train_split = train_split
-        self.validation_split = validation_split
+        self.OPT_STEP_SIZE = OPT_STEP_SIZE
+        self.OPT_GAMMA = OPT_GAMMA
+        self.train_split = TRAIN_SPLIT
+        self.validation_split = VAL_SPLIT
         self.train_losses = []
         self.test_losses = []
         self.y_test = []
@@ -72,10 +74,10 @@ class NN_Trainer_Segmentation():
             "mps" if torch.backends.mps.is_available() else "cpu")
         model = self.model.to(device)
         loss_fn = nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(
+        optimizer = torch.optim.RMSprop(
             model.parameters(), lr=self.LEARNING_RATE, weight_decay=self.WEIGHT_DECAY, momentum=self.MOMENTUM)
         scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=30, gamma=0.1)
+            optimizer, step_size=self.OPT_STEP_SIZE, gamma=self.OPT_GAMMA)
         model.train()
         for epoch in range(self.NUM_EPOCHS):
             # Train the model
