@@ -14,10 +14,15 @@ from Data_fingerprint import fingerprint
 
 
 class NN_Trainer_Segmentation():
-    def __init__(self, model, NUM_EPOCHS=20, BATCH_SIZE=32, save_dir="train_progress", data_folder=None) -> None:
+    def __init__(self, model, NUM_EPOCHS=20, BATCH_SIZE=32, LEARNING_RATE=0.01, WEIGHT_DECAY=1e-4, MOMENTUM=0.9, save_dir="train_progress", data_folder=None, train_split=0.7, validation_split=0.15) -> None:
         self.model = model
         self.NUM_EPOCHS = NUM_EPOCHS
         self.BATCH_SIZE = BATCH_SIZE
+        self.LEARNING_RATE = LEARNING_RATE
+        self.WEIGHT_DECAY = WEIGHT_DECAY
+        self.MOMENTUM = MOMENTUM
+        self.train_split = train_split
+        self.validation_split = validation_split
         self.train_losses = []
         self.test_losses = []
         self.y_test = []
@@ -39,14 +44,16 @@ class NN_Trainer_Segmentation():
             transforms.Normalize(normalization_mean, normalization_std)
         ])
 
+        # Data augmentation
+
         # Load the dataset from the specified folder
         dataset = torchvision.datasets.ImageFolder(
             root=data_folder, transform=transform)
 
         # Split the dataset into train, validation, and test sets
         total_size = len(dataset)
-        train_size = int(0.7 * total_size)
-        val_size = int(0.15 * total_size)
+        train_size = int(self.train_split * total_size)
+        val_size = int(self.validation_split * total_size)
         test_size = total_size - train_size - val_size
 
         train_dataset, val_dataset, test_dataset = random_split(
@@ -66,7 +73,7 @@ class NN_Trainer_Segmentation():
         model = self.model.to(device)
         loss_fn = nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
-            model.parameters(), lr=0.01, weight_decay=5*1e-4, momentum=0.9)
+            model.parameters(), lr=self.LEARNING_RATE, weight_decay=self.WEIGHT_DECAY, momentum=self.MOMENTUM)
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer, step_size=30, gamma=0.1)
         model.train()
