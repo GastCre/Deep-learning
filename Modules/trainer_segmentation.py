@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 from torch.utils.data import DataLoader, random_split, Subset
 import torchvision
 import torchvision.transforms as transforms
-import Data_fingerprint import fingerprint
+from Data_fingerprint import fingerprint
 
 
 class NN_Trainer_Segmentation():
