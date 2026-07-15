@@ -1,16 +1,16 @@
 # %% Adding the system path to import the dataset module
-from data.ImageNet.dataset_ImageNet100 import trainloader, testloader, validationloader
-from sklearn.metrics import accuracy_score, confusion_matrix
-import seaborn as sns
-from Modules.trainer_ImageNet100 import NN_Trainer_ImageNet100
-import numpy as np
-import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
-import torch.nn as nn
-import torchvision.transforms as transforms
-import torchvision
-import torch
 import os
+import torch
+import torchvision
+import torchvision.transforms as transforms
+import torch.nn as nn
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import numpy as np
+from Modules.trainer_ImageNet100 import NN_Trainer_ImageNet100
+import seaborn as sns
+from sklearn.metrics import accuracy_score, confusion_matrix
+from data.ImageNet.dataset_ImageNet100 import trainloader, testloader, validationloader
 os.chdir("/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning")
 
 
@@ -214,7 +214,7 @@ if __name__ == "__main__":
 
     # --- Full training ---
     trainer = NN_Trainer_ImageNet100(
-        model=VGG19(), NUM_EPOCHS=25, save_dir=os.path.join(SCRIPT_DIR, "train_progress"))
+        model=VGG19(), NUM_EPOCHS=50, save_dir=os.path.join(SCRIPT_DIR, "train_progress"))
     trainer.train()
-    trainer.get_scores()
+    # trainer.get_scores()
 # %%
