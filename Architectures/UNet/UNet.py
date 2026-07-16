@@ -1,16 +1,16 @@
 # %% Adding the system path to import the dataset module
-from data.CIFAR100.dataset_CIFAR100 import trainloader, testloader, validationloader
-from sklearn.metrics import accuracy_score, confusion_matrix
-import seaborn as sns
-from Modules.trainer_CIFAR100 import NN_Trainer_CIFAR100
-import numpy as np
-import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
-import torch.nn as nn
-import torchvision.transforms as transforms
-import torchvision
-import torch
+from Modules.trainer_segmentation import NN_Trainer_Segmentation, SegmentationDataset
+from torch.utils.data import DataLoader, Subset, random_split
 import os
+import torch
+import torchvision
+import torchvision.transforms as transforms
+import torch.nn as nn
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from sklearn.metrics import accuracy_score, confusion_matrix
 os.chdir("/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning")
 
 
@@ -76,7 +76,7 @@ class UNet(nn.Module):
         enc3 = self.encoder3(enc2)
         enc4 = self.encoder4(enc3)
 
-        # Transition from encoder to decoder
+        # Bottleneck: Transition from encoder to decoder
         enc4_to_dec1 = self.encoder4_to_decoder1(enc4)
 
         # Decoder
@@ -85,5 +85,49 @@ class UNet(nn.Module):
         dec3 = self.decoder3(torch.cat((dec2, enc1), dim=1))
         dec4 = self.decoder4(dec3)
         return dec4
+
+
+# %% Quick test on Oxford-IIIT Pet segmentation
+
+PET_ROOT = "data/OxfordPet"
+SIZE = 128            # divisible by 8 (this UNet pools 3x)
+N_SUBSET = 300        # keep the smoke test quick; raise for a fuller run
+
+# Download once: images (.jpg) + trimap masks (.png, labels {1,2,3})
+torchvision.datasets.OxfordIIITPet(
+    root=PET_ROOT, split="trainval", target_types="segmentation", download=True)
+images_dir = os.path.join(PET_ROOT, "oxford-iiit-pet", "images")
+masks_dir = os.path.join(PET_ROOT, "oxford-iiit-pet", "annotations", "trimaps")
+
+# Fixed normalization to keep this quick — the real fingerprint would read all
+# ~7k images. Swap for trainer.make_dataloaders(...) when you want dataset stats.
+full = SegmentationDataset(
+    images_dir=images_dir, masks_dir=masks_dir, size=SIZE,
+    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5],
+    # trimap -> {0,1,2}
+    intensity_max=[255, 255, 255], label_values=[1, 2, 3])
+
+subset = Subset(full, list(range(N_SUBSET)))
+n_train = int(0.8 * len(subset))
+train_ds, test_ds = random_split(
+    subset, [n_train, len(subset) - n_train],
+    generator=torch.Generator().manual_seed(42))
+
+model = UNet()        # out_channels = 3 == trimap classes
+trainer = NN_Trainer_Segmentation(
+    model, NUM_EPOCHS=100, BATCH_SIZE=32, LEARNING_RATE=1e-3,
+    save_dir="train_progress_pet")
+trainer.trainloader = DataLoader(
+    train_ds, batch_size=trainer.BATCH_SIZE, shuffle=True)
+trainer.testloader = DataLoader(
+    test_ds, batch_size=trainer.BATCH_SIZE, shuffle=False)
+trainer.validationloader = trainer.testloader
+
+# %%
+trainer.train()
+
+# %%
+trainer.get_scores()
+
 
 # %%

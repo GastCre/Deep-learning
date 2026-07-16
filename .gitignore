@@ -11,5 +11,17 @@ wheels/
 # Virtual environments
 .venv
 
+# Image files
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+
 # Folders
 data/CIFAR100/data
+data/OxfordPet
+
+# tar files
+*.tar
+*.tar.gz

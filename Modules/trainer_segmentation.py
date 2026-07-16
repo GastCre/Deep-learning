@@ -1,20 +1,88 @@
 import os
-
+from pathlib import Path
+from PIL import Image
 import torch
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset, random_split
 from sklearn.metrics import accuracy_score, confusion_matrix
 from torch.utils.data import DataLoader, random_split, Subset
 import torchvision
 import torchvision.transforms as transforms
-from Data_fingerprint import fingerprint
+import torchvision.transforms.functional as TF
+from Modules.Data_fingerprint import fingerprint
+
+# Custom dataset class for segmentation tasks
+
+
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+
+
+class SegmentationDataset(Dataset):
+    def __init__(self, images_dir, masks_dir, size, mean, std, intensity_max, label_values=None):
+        images_dir, masks_dir = Path(images_dir), Path(masks_dir)
+        # Pair each image with the mask of the same stem (extensions may differ,
+        # e.g. image .jpg / mask .png); sorted for determinism.
+        mask_by_stem = {p.stem: p for p in masks_dir.iterdir()
+                        if p.suffix.lower() in IMAGE_EXTS}
+        self.pairs = []
+        for img_path in sorted(images_dir.iterdir()):
+            if img_path.suffix.lower() not in IMAGE_EXTS:
+                continue
+            mask_path = mask_by_stem.get(img_path.stem)
+            if mask_path is not None:
+                self.pairs.append((img_path, mask_path))
+        if not self.pairs:
+            raise ValueError(
+                f"No image/mask pairs found in {images_dir} / {masks_dir}")
+        self.size, self.mean, self.std = size, mean, std
+        self.intensity_max = np.asarray(intensity_max, dtype=np.float32)
+
+        # Optional remap of raw mask values -> contiguous class indices {0..C-1}.
+        # e.g. label_values=[1,2,3] maps Oxford-Pet trimap to {0,1,2};
+        # [0,255] maps a binary mask to {0,1}. Built as an 8-bit lookup table.
+        if label_values is None:
+            self.lut = None
+        else:
+            self.lut = np.full(256, -1, dtype=np.int64)
+            for idx, value in enumerate(label_values):
+                self.lut[value] = idx
+
+    def __len__(self):
+        return len(self.pairs)
+
+    def __getitem__(self, idx):
+        img_path, mask_path = self.pairs[idx]
+        image = Image.open(img_path).convert("RGB")
+        # keep as-is: single-channel label map
+        mask = Image.open(mask_path)
+
+        # --- image: bilinear resize -> scale by intensity_max -> normalize ---
+        image = TF.resize(image, [self.size, self.size])   # bilinear default
+        # [H,W,3], same divisor as the stats
+        arr = np.asarray(image, dtype=np.float32) / self.intensity_max
+        image = torch.from_numpy(arr).permute(
+            2, 0, 1).contiguous()     # [3,H,W]
+        image = TF.normalize(image, self.mean, self.std)
+
+        # --- mask: NEAREST resize -> (remap) -> Long tensor of class indices ---
+        mask = TF.resize(mask, [self.size, self.size],
+                         interpolation=TF.InterpolationMode.NEAREST)
+        mask = np.array(mask)                      # [H,W], raw label values
+        if self.lut is not None:
+            mask = self.lut[mask]                  # raw values -> {0..C-1}
+            if (mask < 0).any():
+                raise ValueError(
+                    f"Mask {mask_path.name} contains a value not in label_values")
+        mask = torch.as_tensor(mask, dtype=torch.long)
+
+        return image, mask
 
 
 class NN_Trainer_Segmentation():
-    def __init__(self, model, NUM_EPOCHS=20, BATCH_SIZE=32, LEARNING_RATE=0.01, WEIGHT_DECAY=1e-4, MOMENTUM=0.9, OPT_STEP_SIZE=30, OPT_GAMMA=0.1, save_dir="train_progress", data_folder=None, TRAIN_SPLIT=0.7, VAL_SPLIT=0.15) -> None:
+    def __init__(self, model, NUM_EPOCHS=20, BATCH_SIZE=32, LEARNING_RATE=0.001, WEIGHT_DECAY=1e-4, MOMENTUM=0.9, OPT_STEP_SIZE=30, OPT_GAMMA=0.1, save_dir="train_progress", data_folder=None, TRAIN_SPLIT=0.7, VAL_SPLIT=0.15) -> None:
         self.model = model
         self.NUM_EPOCHS = NUM_EPOCHS
         self.BATCH_SIZE = BATCH_SIZE
@@ -23,8 +91,8 @@ class NN_Trainer_Segmentation():
         self.MOMENTUM = MOMENTUM
         self.OPT_STEP_SIZE = OPT_STEP_SIZE
         self.OPT_GAMMA = OPT_GAMMA
-        self.train_split = TRAIN_SPLIT
-        self.validation_split = VAL_SPLIT
+        self.TRAIN_SPLIT = TRAIN_SPLIT
+        self.VAL_SPLIT = VAL_SPLIT
         self.train_losses = []
         self.test_losses = []
         self.y_test = []
@@ -33,29 +101,28 @@ class NN_Trainer_Segmentation():
         os.makedirs(self.save_dir, exist_ok=True)
 
     # Dataloader from input folder + split into train/test/validation sets
-    def make_dataloaders(self, data_folder):
+    def make_dataloaders(self, data_folder, images_subdir="images", masks_subdir="masks", size=256, label_values=None):
+        data_folder = Path(data_folder)
+        images_dir = data_folder / images_subdir
+        masks_dir = data_folder / masks_subdir
 
-        # Extract dataset fingerprint from the specified folder
-        dataset_fingerprint = fingerprint(data_folder)
-        normalization_mean, normalization_std = dataset_fingerprint[
-            'mean'], dataset_fingerprint['std']
+        # Fingerprint the images for per-channel normalization stats. Divide by
+        # intensity_max so the stats and the pixels share the same scale (Option B).
+        dataset_fingerprint = fingerprint(images_dir)
+        normalization_mean = dataset_fingerprint.mean / dataset_fingerprint.intensity_max
+        normalization_std = dataset_fingerprint.std / dataset_fingerprint.intensity_max
 
-        # Define transformations for the images
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(normalization_mean, normalization_std)
-        ])
-
-        # Data augmentation
-
-        # Load the dataset from the specified folder
-        dataset = torchvision.datasets.ImageFolder(
-            root=data_folder, transform=transform)
+        # Load image/mask pairs from the images/ and masks/ subfolders
+        dataset = SegmentationDataset(
+            images_dir=images_dir, masks_dir=masks_dir, size=size,
+            mean=normalization_mean, std=normalization_std,
+            intensity_max=dataset_fingerprint.intensity_max,
+            label_values=label_values)
 
         # Split the dataset into train, validation, and test sets
         total_size = len(dataset)
-        train_size = int(self.train_split * total_size)
-        val_size = int(self.validation_split * total_size)
+        train_size = int(self.TRAIN_SPLIT * total_size)
+        val_size = int(self.VAL_SPLIT * total_size)
         test_size = total_size - train_size - val_size
 
         train_dataset, val_dataset, test_dataset = random_split(
@@ -74,8 +141,8 @@ class NN_Trainer_Segmentation():
             "mps" if torch.backends.mps.is_available() else "cpu")
         model = self.model.to(device)
         loss_fn = nn.CrossEntropyLoss()
-        optimizer = torch.optim.RMSprop(
-            model.parameters(), lr=self.LEARNING_RATE, weight_decay=self.WEIGHT_DECAY, momentum=self.MOMENTUM)
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=self.LEARNING_RATE, weight_decay=self.WEIGHT_DECAY)
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer, step_size=self.OPT_STEP_SIZE, gamma=self.OPT_GAMMA)
         model.train()
@@ -83,7 +150,7 @@ class NN_Trainer_Segmentation():
             # Train the model
             loss_epochs = []
             for i, batch in enumerate(self.trainloader, 0):
-                inputs, labels = batch['image'], batch['label']
+                inputs, labels = batch[0], batch[1]
                 inputs, labels = inputs.to(device), labels.to(device)
                 # zero gradients
                 optimizer.zero_grad()
@@ -104,25 +171,30 @@ class NN_Trainer_Segmentation():
             # Evaluate on the test set
             model.eval()
             test_loss_epochs = []
-            self.y_test = []
-            self.y_test_hat = []
+            self.confusion = None          # C x C pixel confusion, built up per batch
             for batch in self.testloader:
-                inputs, labels = batch['image'], batch['label']
-                inputs, labels = inputs.to(device), labels.to(device)
+                inputs, masks = batch[0], batch[1]
+                inputs, masks = inputs.to(device), masks.to(device)
                 with torch.no_grad():
-                    outputs = model(inputs)
-                    _, predicted = torch.max(outputs, 1)
-                    loss = loss_fn(outputs, labels)
+                    outputs = model(inputs)             # [N, C, H, W]
+                    loss = loss_fn(outputs, masks)      # masks: [N, H, W] Long
+                    predicted = outputs.argmax(dim=1)   # [N, H, W]
                     test_loss_epochs.append(loss.item())
-                self.y_test.extend(labels.cpu().numpy())
-                self.y_test_hat.extend(predicted.cpu().numpy())
+                n_classes = outputs.shape[1]
+                if self.confusion is None:
+                    self.confusion = np.zeros(
+                        (n_classes, n_classes), dtype=np.int64)
+                self.confusion += self._pixel_confusion(
+                    masks, predicted, n_classes)
+            pixel_acc = np.trace(self.confusion) / self.confusion.sum()
+            dice = self._mean_dice(self.confusion)
             print(
-                f"Test Loss: {np.mean(test_loss_epochs):.4f}, Test Accuracy: {accuracy_score(self.y_test, self.y_test_hat):.4f}")
+                f"Test Loss: {np.mean(test_loss_epochs):.4f}, Pixel Acc: {pixel_acc:.4f}, mean Dice: {dice:.4f}")
             self.test_losses.append(np.mean(test_loss_epochs))
             # Save loss plot after each epoch
             self.plot_train_test()
             plt.savefig(os.path.join(self.save_dir,
-                        f"loss_plot_epoch_{epoch+1}.png"))
+                        f"loss_plot.png"))
             plt.close()
             # Set the model back to train mode for the next epoch
             model.train()
@@ -144,12 +216,28 @@ class NN_Trainer_Segmentation():
         self.plot_train_test()
         plt.show()
 
+    @staticmethod
+    def _pixel_confusion(target, pred, n_classes):
+        # Flatten to 1-D and bin (true, pred) pairs into a C x C matrix
+        t = target.reshape(-1).cpu().numpy()
+        p = pred.reshape(-1).cpu().numpy()
+        k = t * n_classes + p
+        return np.bincount(k, minlength=n_classes ** 2).reshape(n_classes, n_classes)
+
+    @staticmethod
+    def _mean_dice(cm):
+        # Per-class Dice = 2*TP / (2*TP + FP + FN) = 2*diag / (row_sum + col_sum),
+        # averaged over classes. row_sum = true totals, col_sum = predicted totals.
+        tp = np.diag(cm)
+        denom = cm.sum(axis=1) + cm.sum(axis=0)
+        return np.mean(2 * tp / np.maximum(denom, 1))
+
     def get_scores(self):
-        #  Accuracy score
+        cm = self.confusion
+        pixel_acc = np.trace(cm) / cm.sum()
         print(
-            f"Final Test Accuracy: {accuracy_score(self.y_test, self.y_test_hat):.4f}")
-        # Confusion matrix
-        cm = confusion_matrix(self.y_test, self.y_test_hat)
+            f"Final Pixel Accuracy: {pixel_acc:.4f}, mean Dice: {self._mean_dice(cm):.4f}")
+        # Per-pixel confusion matrix (rows = true class, cols = predicted)
         plt.figure(figsize=(10, 7))
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
         plt.xlabel('Predicted')
