@@ -19,9 +19,13 @@ from Modules.Data_fingerprint import fingerprint
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 
+# Pixels carrying this index are excluded from both the loss and the metrics —
+# used for regions the ground truth itself leaves unclassified.
+IGNORE_INDEX = 255
+
 
 class SegmentationDataset(Dataset):
-    def __init__(self, images_dir, masks_dir, size, mean, std, intensity_max, label_values=None):
+    def __init__(self, images_dir, masks_dir, size, mean, std, intensity_max, label_values=None, augment=False, ignore_values=None, ignore_index=IGNORE_INDEX):
         images_dir, masks_dir = Path(images_dir), Path(masks_dir)
         # Pair each image with the mask of the same stem (extensions may differ,
         # e.g. image .jpg / mask .png); sorted for determinism.
@@ -43,12 +47,24 @@ class SegmentationDataset(Dataset):
         # Optional remap of raw mask values -> contiguous class indices {0..C-1}.
         # e.g. label_values=[1,2,3] maps Oxford-Pet trimap to {0,1,2};
         # [0,255] maps a binary mask to {0,1}. Built as an 8-bit lookup table.
+        # Values listed in ignore_values map to ignore_index instead of a class,
+        # so the loss and the metrics skip those pixels entirely (e.g. the
+        # Oxford-Pet "unclassified" boundary band).
+        self.ignore_index = ignore_index
         if label_values is None:
             self.lut = None
         else:
             self.lut = np.full(256, -1, dtype=np.int64)
             for idx, value in enumerate(label_values):
                 self.lut[value] = idx
+            for value in (ignore_values or []):
+                self.lut[value] = ignore_index
+
+        # Train-time augmentation. Geometric transforms are applied identically
+        # to image and mask; photometric jitter is applied to the image only.
+        self.augment = augment
+        self.color_jitter = transforms.ColorJitter(
+            brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02) if augment else None
 
     def __len__(self):
         return len(self.pairs)
@@ -59,17 +75,27 @@ class SegmentationDataset(Dataset):
         # keep as-is: single-channel label map
         mask = Image.open(mask_path)
 
-        # --- image: bilinear resize -> scale by intensity_max -> normalize ---
+        # Resize first: image bilinear, mask nearest (never blend class ids)
         image = TF.resize(image, [self.size, self.size])   # bilinear default
+        mask = TF.resize(mask, [self.size, self.size],
+                         interpolation=TF.InterpolationMode.NEAREST)
+
+        # --- augmentation (train only) ---
+        if self.augment:
+            # geometric: identical flip on image AND mask (no fill needed, stays aligned)
+            if torch.rand(1).item() < 0.5:
+                image, mask = TF.hflip(image), TF.hflip(mask)
+            # photometric: image only (a mask has no colour)
+            image = self.color_jitter(image)
+
+        # --- image: scale by intensity_max -> normalize ---
         # [H,W,3], same divisor as the stats
         arr = np.asarray(image, dtype=np.float32) / self.intensity_max
         image = torch.from_numpy(arr).permute(
             2, 0, 1).contiguous()     # [3,H,W]
         image = TF.normalize(image, self.mean, self.std)
 
-        # --- mask: NEAREST resize -> (remap) -> Long tensor of class indices ---
-        mask = TF.resize(mask, [self.size, self.size],
-                         interpolation=TF.InterpolationMode.NEAREST)
+        # --- mask: (remap) -> Long tensor of class indices ---
         mask = np.array(mask)                      # [H,W], raw label values
         if self.lut is not None:
             mask = self.lut[mask]                  # raw values -> {0..C-1}
@@ -140,11 +166,11 @@ class NN_Trainer_Segmentation():
         device = torch.device(
             "mps" if torch.backends.mps.is_available() else "cpu")
         model = self.model.to(device)
-        loss_fn = nn.CrossEntropyLoss()
+        loss_fn = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
         optimizer = torch.optim.Adam(
             model.parameters(), lr=self.LEARNING_RATE, weight_decay=self.WEIGHT_DECAY)
-        scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=self.OPT_STEP_SIZE, gamma=self.OPT_GAMMA)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=self.NUM_EPOCHS, eta_min=self.OPT_GAMMA)
         model.train()
         for epoch in range(self.NUM_EPOCHS):
             # Train the model
@@ -221,6 +247,10 @@ class NN_Trainer_Segmentation():
         # Flatten to 1-D and bin (true, pred) pairs into a C x C matrix
         t = target.reshape(-1).cpu().numpy()
         p = pred.reshape(-1).cpu().numpy()
+        # Drop ignored pixels: they have no ground-truth class, and their index
+        # lies outside [0, n_classes) so they would overflow the reshape below.
+        keep = t != IGNORE_INDEX
+        t, p = t[keep], p[keep]
         k = t * n_classes + p
         return np.bincount(k, minlength=n_classes ** 2).reshape(n_classes, n_classes)
 

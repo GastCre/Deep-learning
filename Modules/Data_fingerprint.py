@@ -1,6 +1,6 @@
 # %%
 from pathlib import Path
-from collections import Counter
+from collections import Counter, defaultdict
 import matplotlib.pyplot as plt
 import itk
 from dataclasses import dataclass, field
@@ -25,6 +25,13 @@ data_path = Path(DATA_FOLDER)
 SAMPLE_PER_IMAGE = 50_000
 _rng = np.random.default_rng(0)
 
+# A dataset can mix chromatic and neutral images (e.g. H&E slides alongside
+# unstained scans). Neutral images have R == G == B at every pixel, so
+# mean(max - min) is 0. Pooling the two makes every statistic a blend that
+# describes no real image, so each population is fingerprinted on its own.
+# The tolerance is slack for lossy compression, which perturbs exact equality.
+CHROMA_TOL = 1.0
+
 # %% Data features
 
 
@@ -40,6 +47,17 @@ def _to_rgb(arr):
     if arr.ndim == 2:                       # grayscale -> replicate to 3 channels
         return np.repeat(arr[..., None], 3, axis=-1)
     return arr[..., :3]                     # RGB stays, RGBA drops alpha
+
+
+def _chromaticity(vx) -> float:
+    """Mean per-pixel (max channel - min channel). 0 means perfectly neutral."""
+    wide = vx.astype(np.int16)              # uint8 would wrap on subtraction
+    return float((wide.max(axis=1) - wide.min(axis=1)).mean())
+
+
+def modality_name(chromatic: bool) -> str:
+    """Display name for the chromaticity flag the dataset is split on."""
+    return "chromatic" if chromatic else "neutral"
 
 
 CHANNELS = ("R", "G", "B")
@@ -112,16 +130,30 @@ class DatasetFingerprint:
     n_labelled: int = 0                  # images that had a matching label
     label_map: dict[int, str] = field(default_factory=dict)
     class_pixels: dict[int, int] = field(default_factory=dict)
+    # {label value: stats}, so a mode in the foreground can be traced to a class
+    per_class: dict[int, IntensityStats] = field(default_factory=dict)
+    # True when this population carries colour, False when it is neutral
+    # (R == G == B). None when the dataset was not split.
+    chromatic: bool | None = None
+    chroma: list[float] = field(default_factory=list)   # per image
+
+    @property
+    def modality(self) -> str:
+        return "" if self.chromatic is None else modality_name(self.chromatic)
 
     def describe(self) -> None:
         """Print the full report: dataset meta + per-channel intensity tables."""
         def shp(a): return list(map(int, a))
+        chroma = (f"{np.median(self.chroma):.2f} median, "
+                  f"{min(self.chroma):.2f}-{max(self.chroma):.2f} range"
+                  if self.chroma else "n/a")
         lines = [
-            "Dataset fingerprint",
+            f"Dataset fingerprint{f' - {self.modality}' if self.modality else ''}",
             "=" * 42,
             f"images         : {self.n_images}",
             f"labelled       : {self.n_labelled}",
             f"channel counts : {self.channel_counts}",
+            f"chromaticity   : {chroma}",
             f"shape (H, W)   : min {shp(self.shape_min)}  "
             f"median {shp(self.shape_median)}  max {shp(self.shape_max)}",
             "",
@@ -137,12 +169,21 @@ class DatasetFingerprint:
                       *self.foreground.table()]
             if self.class_pixels:
                 total = sum(self.class_pixels.values())
-                lines += ["", "Class balance within foreground", "-" * 42]
+                lines += ["",
+                          "Per-class foreground (mean +/- std per channel)",
+                          "-" * 66,
+                          f"{'':>3} {'class':<10}{'pixels':>12}{'share':>8}"
+                          + "".join(f"{c:>14}" for c in CHANNELS)]
                 for value, count in sorted(self.class_pixels.items(),
                                            key=lambda kv: -kv[1]):
                     name = self.label_map.get(value, "?")
-                    lines.append(f"{value:>3} {name:<12}{count:>14,}"
-                                 f"{count / total:>8.1%}")
+                    row = (f"{value:>3} {name:<10}{count:>12,}"
+                           f"{count / total:>8.1%}")
+                    stats = self.per_class.get(value)
+                    if stats is not None:
+                        row += "".join(f"{stats.mean[c]:>8.1f}+/-{stats.std[c]:<3.0f}"
+                                       for c in range(3))
+                    lines.append(row)
         else:
             lines += ["", "Foreground pixels : no labels found"]
 
@@ -186,8 +227,86 @@ class DatasetFingerprint:
         ax_size.set(xlabel="Image shape", ylabel="Count",
                     title=f"Size distribution ({len(shape_counts)} unique)")
 
+        if self.modality:
+            fig.suptitle(f"{self.modality}  ({self.n_images} images)")
         fig.tight_layout()
         plt.show()
+
+
+@dataclass
+class DatasetFingerprints:
+    """One fingerprint per chromaticity class. Index by the flag: fps[True] for
+    the chromatic images, fps[False] for the neutral (greyscale) ones."""
+    by_modality: dict[bool, DatasetFingerprint]
+
+    def __getitem__(self, chromatic) -> DatasetFingerprint:
+        return self.by_modality[chromatic]
+
+    @property
+    def single(self) -> DatasetFingerprint:
+        """The one fingerprint, when the dataset was not split by chromaticity."""
+        if len(self.by_modality) != 1:
+            raise ValueError(
+                f"expected one fingerprint, got {len(self.by_modality)}: "
+                f"{[fp.modality for fp in self.by_modality.values()]}")
+        return next(iter(self.by_modality.values()))
+
+    def __iter__(self):
+        return iter(self.by_modality.values())
+
+    def class_matrix(self) -> dict[int, dict[str, int]]:
+        """{label value: {modality: n_pixels}} over every declared class, so a
+        class that is absent from a modality - or from the dataset - shows up
+        as a zero rather than as a missing row."""
+        declared = {}
+        for fp in self.by_modality.values():
+            declared.update(fp.label_map)
+        observed = {v for fp in self.by_modality.values()
+                    for v in fp.class_pixels}
+        return {value: {m: fp.class_pixels.get(value, 0)
+                        for m, fp in self.by_modality.items()}
+                for value in sorted(set(declared) | observed)}
+
+    def describe(self) -> None:
+        if set(self.by_modality) == {None}:          # split turned off
+            print("Chromaticity split: off (all images pooled)\n")
+        else:
+            totals = {fp.modality: fp.n_images
+                      for fp in self.by_modality.values()}
+            print(f"Modalities: {totals}  (split on chromaticity, "
+                  f"tol {CHROMA_TOL})\n")
+        for fp in self.by_modality.values():
+            fp.describe()
+            print()
+
+        names = {}
+        for fp in self.by_modality.values():
+            names.update(fp.label_map)
+        matrix = self.class_matrix()
+        if not matrix:
+            return
+        modalities = [fp.modality for fp in self.by_modality.values()]
+        print("Class presence by modality (pixels)")
+        print("-" * (15 + 16 * len(modalities) + 8))
+        print(f"{'':>3} {'class':<10}" + "".join(f"{m:>16}" for m in modalities)
+              + f"{'':>3}")
+        for value, counts in matrix.items():
+            row = f"{value:>3} {names.get(value, '?'):<10}"
+            row += "".join(f"{c:>16,}" if c else f"{'-':>16}"
+                           for c in counts.values())
+            present = [m for m, c in counts.items() if c]
+            if len(present) > 1:            # blended if pooled
+                row += "  *"
+            elif not present:               # declared but never annotated
+                row += "  (absent)"
+            print(row)
+        if any(sum(1 for c in counts.values() if c) > 1
+               for counts in matrix.values()):
+            print("\n* spans modalities - compare per modality, never pooled")
+
+    def plot_summary(self):
+        for fp in self.by_modality.values():
+            fp.plot_summary()
 
 
 def _subsample(vx):
@@ -219,18 +338,59 @@ def label_index(label_folder) -> dict[str, Path]:
     return index
 
 
-def fingerprint(data_folder, label_folder=None,
-                labels_file=None) -> DatasetFingerprint:
+@dataclass
+class _Accum:
+    """Running pixel samples for one modality, before stats are computed."""
+    n_images: int = 0
+    n_labelled: int = 0
+    sizes: list = field(default_factory=list)
+    channels: list = field(default_factory=list)
+    chroma: list = field(default_factory=list)
+    # each entry is (n_pixels, 3)
+    voxels: list = field(default_factory=list)
+    fg_voxels: list = field(default_factory=list)
+    class_pixels: Counter = field(default_factory=Counter)   # unsampled
+    class_voxels: defaultdict = field(
+        default_factory=lambda: defaultdict(list))
+
+    def finalize(self, label_map, chromatic) -> DatasetFingerprint:
+        all_stats = _stats(np.concatenate(self.voxels))
+        # Reuse the all-pixel bin edges so every histogram lines up
+        fg_stats = (_stats(np.concatenate(self.fg_voxels), all_stats.intensity_bins)
+                    if self.fg_voxels else None)
+        per_class = {value: _stats(np.concatenate(vx), all_stats.intensity_bins)
+                     for value, vx in sorted(self.class_voxels.items())}
+        # Spatial size stats (first two dims = H, W)
+        hw = np.array([s[:2] for s in self.sizes])
+        return DatasetFingerprint(n_images=self.n_images,
+                                  sizes=self.sizes,
+                                  channel_counts=dict(Counter(self.channels)),
+                                  shape_min=hw.min(axis=0),
+                                  shape_median=np.median(
+                                      hw, axis=0).astype(int),
+                                  shape_max=hw.max(axis=0),
+                                  all=all_stats,
+                                  foreground=fg_stats,
+                                  n_labelled=self.n_labelled,
+                                  label_map=label_map,
+                                  class_pixels=dict(self.class_pixels),
+                                  per_class=per_class,
+                                  chromatic=chromatic,
+                                  chroma=self.chroma)
+
+
+def fingerprint(data_folder, label_folder=None, labels_file=None,
+                split_chromaticity=True) -> DatasetFingerprints:
+    """Fingerprint every image under data_folder.
+
+    split_chromaticity separates chromatic from neutral images into their own
+    fingerprints. Turn it off when the dataset is known to be uniform (every
+    image colour, or every image greyscale) to get a single pooled fingerprint;
+    per-image chromaticity is still reported either way.
+    """
     label_map = read_label_map(labels_file) if labels_file else {}
     labels = label_index(label_folder) if label_folder else {}
-    n_images = 0
-    n_labelled = 0
-    sizes = []
-    channels = []
-    voxels = []                             # each entry is (n_pixels, 3)
-    fg_voxels = []
-    # {label value: n_pixels}, unsampled
-    class_pixels = Counter()
+    accums = defaultdict(_Accum)
     for file in Path(data_folder).rglob("*"):
         if file.suffix.lower() not in IMAGE_EXTS:
             continue
@@ -239,11 +399,18 @@ def fingerprint(data_folder, label_folder=None,
         except Exception as err:            # skip unreadable/corrupt images
             print(f"skipping {file.name}: {err}")
             continue
-        sizes.append(list(img_array.shape))
-        channels.append(img_array.shape[-1] if img_array.ndim == 3 else 1)
         rgb = _to_rgb(img_array)
-        voxels.append(_subsample(rgb.reshape(-1, 3)))
-        n_images += 1
+        vx = _subsample(rgb.reshape(-1, 3))
+        # Classify on the sample, not the full image: the sample is what the
+        # statistics are built from, and neutrality is a whole-image property
+        chroma = _chromaticity(vx)
+        # None keys the single pooled population when the split is off
+        acc = accums[(chroma > CHROMA_TOL) if split_chromaticity else None]
+        acc.sizes.append(list(img_array.shape))
+        acc.channels.append(img_array.shape[-1] if img_array.ndim == 3 else 1)
+        acc.chroma.append(chroma)
+        acc.voxels.append(vx)
+        acc.n_images += 1
 
         label_file = labels.get(file.stem)
         if label_file is None:
@@ -263,41 +430,29 @@ def fingerprint(data_folder, label_folder=None,
         # Foreground = the values named in labels.txt, so anything unmapped
         # (background, stray values) is excluded rather than assumed foreground
         mask = np.isin(seg, list(label_map)) if label_map else seg > 0
-        n_labelled += 1
+        acc.n_labelled += 1
         for value, count in zip(*np.unique(seg[mask], return_counts=True)):
-            class_pixels[int(value)] += int(count)
+            value = int(value)
+            acc.class_pixels[value] += int(count)
+            # Sample each class separately: a rare class would otherwise be
+            # swamped in the pooled foreground sample and get no usable stats
+            acc.class_voxels[value].append(_subsample(rgb[seg == value]))
         fg = rgb[mask]                      # (n_foreground, 3)
         if len(fg):
-            fg_voxels.append(_subsample(fg))
+            acc.fg_voxels.append(_subsample(fg))
 
-    if not voxels:
+    if not accums:
         raise ValueError(f"No readable images found under {data_folder}")
 
-    all_vx = np.concatenate(voxels)         # (total_voxels, 3)
-    all_stats = _stats(all_vx)
-    # Reuse the all-pixel bin edges so the two histograms line up
-    fg_stats = (_stats(np.concatenate(fg_voxels), all_stats.intensity_bins)
-                if fg_voxels else None)
-
-    # Spatial size stats (first two dims = H, W)
-    hw = np.array([s[:2] for s in sizes])
-
-    return DatasetFingerprint(n_images=n_images,
-                              sizes=sizes,
-                              channel_counts=dict(Counter(channels)),
-                              shape_min=hw.min(axis=0),
-                              shape_median=np.median(hw, axis=0).astype(int),
-                              shape_max=hw.max(axis=0),
-                              all=all_stats,
-                              foreground=fg_stats,
-                              n_labelled=n_labelled,
-                              label_map=label_map,
-                              class_pixels=dict(class_pixels))
+    # Chromatic first when both are present, so the report reads consistently
+    order = [m for m in (True, False, None) if m in accums]
+    return DatasetFingerprints({m: accums[m].finalize(label_map, m)
+                                for m in order})
 
 
-# %%
+# # %%
 fp = fingerprint(DATA_FOLDER, LABEL_FOLDER, LABELS_FILE)
-# %%
+# # %%
 fp.describe()
 fp.plot_summary()
 # %%

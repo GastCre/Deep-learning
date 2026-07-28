@@ -1,16 +1,16 @@
 # %% Adding the system path to import the dataset module
-from Modules.trainer_segmentation import NN_Trainer_Segmentation, SegmentationDataset
-from torch.utils.data import DataLoader, Subset, random_split
-import os
-import torch
-import torchvision
-import torchvision.transforms as transforms
-import torch.nn as nn
-from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
 from sklearn.metrics import accuracy_score, confusion_matrix
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
+import torch.nn as nn
+import torchvision.transforms as transforms
+import torchvision
+import torch
+import os
+from Modules.Data_fingerprint import fingerprint
+from torch.utils.data import DataLoader, Subset, random_split
+from Modules.trainer_segmentation import NN_Trainer_Segmentation, SegmentationDataset
 os.chdir("/Users/gastoncrecikeinbaum/Documents/Data Science/Courses/Deep learning")
 
 
@@ -26,10 +26,15 @@ os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.7"
 
 def double_conv(in_channels, out_channels):
     return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+        nn.Conv2d(in_channels, out_channels,
+                  kernel_size=3, padding=1, bias=False),
+        nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True),
-        nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+        nn.Conv2d(out_channels, out_channels,
+                  kernel_size=3, padding=1, bias=False),
+        nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True)
+
     )
 
 
@@ -48,7 +53,9 @@ def encoder_to_decoder_block(in_channels, out_channels):
 
 def decoder_block(in_channels, out_channels):
     return nn.Sequential(
-        nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2),
+        nn.ConvTranspose2d(in_channels, out_channels,
+                           kernel_size=2, stride=2, bias=False),
+        nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True),
         double_conv(out_channels, out_channels)
     )
@@ -57,7 +64,7 @@ def decoder_block(in_channels, out_channels):
 
 
 class UNet(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, out_channels=2) -> None:
         super().__init__()
         self.encoder1 = encoder_block(3, 64)
         self.encoder2 = encoder_block(64, 128)
@@ -67,7 +74,7 @@ class UNet(nn.Module):
         self.decoder1 = decoder_block(512, 256)
         self.decoder2 = decoder_block(256+128, 128)
         self.decoder3 = decoder_block(128+64, 64)
-        self.decoder4 = double_conv(64, 3)
+        self.decoder4 = double_conv(64, out_channels)
 
     def forward(self, x):
         # Encoder
@@ -85,49 +92,3 @@ class UNet(nn.Module):
         dec3 = self.decoder3(torch.cat((dec2, enc1), dim=1))
         dec4 = self.decoder4(dec3)
         return dec4
-
-
-# %% Quick test on Oxford-IIIT Pet segmentation
-
-PET_ROOT = "data/OxfordPet"
-SIZE = 128            # divisible by 8 (this UNet pools 3x)
-N_SUBSET = 300        # keep the smoke test quick; raise for a fuller run
-
-# Download once: images (.jpg) + trimap masks (.png, labels {1,2,3})
-torchvision.datasets.OxfordIIITPet(
-    root=PET_ROOT, split="trainval", target_types="segmentation", download=True)
-images_dir = os.path.join(PET_ROOT, "oxford-iiit-pet", "images")
-masks_dir = os.path.join(PET_ROOT, "oxford-iiit-pet", "annotations", "trimaps")
-
-# Fixed normalization to keep this quick — the real fingerprint would read all
-# ~7k images. Swap for trainer.make_dataloaders(...) when you want dataset stats.
-full = SegmentationDataset(
-    images_dir=images_dir, masks_dir=masks_dir, size=SIZE,
-    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5],
-    # trimap -> {0,1,2}
-    intensity_max=[255, 255, 255], label_values=[1, 2, 3])
-
-subset = Subset(full, list(range(N_SUBSET)))
-n_train = int(0.8 * len(subset))
-train_ds, test_ds = random_split(
-    subset, [n_train, len(subset) - n_train],
-    generator=torch.Generator().manual_seed(42))
-
-model = UNet()        # out_channels = 3 == trimap classes
-trainer = NN_Trainer_Segmentation(
-    model, NUM_EPOCHS=100, BATCH_SIZE=32, LEARNING_RATE=1e-3,
-    save_dir="train_progress_pet")
-trainer.trainloader = DataLoader(
-    train_ds, batch_size=trainer.BATCH_SIZE, shuffle=True)
-trainer.testloader = DataLoader(
-    test_ds, batch_size=trainer.BATCH_SIZE, shuffle=False)
-trainer.validationloader = trainer.testloader
-
-# %%
-trainer.train()
-
-# %%
-trainer.get_scores()
-
-
-# %%
